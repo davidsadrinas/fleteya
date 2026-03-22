@@ -1,0 +1,29 @@
+{
+  "name": "fletaya-project",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter @fletaya/web dev",
+    "dev:mobile": "pnpm --filter @fletaya/mobile start",
+    "build:web": "pnpm --filter @fletaya/web build",
+    "test": "pnpm -r test",
+    "test:shared": "pnpm --filter @fletaya/shared test",
+    "test:web": "pnpm --filter @fletaya/web test",
+    "test:mobile": "pnpm --filter @fletaya/mobile test",
+    "test:coverage": "pnpm -r test -- --coverage",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "db:migrate": "pnpm --filter @fletaya/supabase migrate",
+    "db:seed": "pnpm --filter @fletaya/supabase seed",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}

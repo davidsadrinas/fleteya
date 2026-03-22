@@ -1,0 +1,19 @@
+{
+  "name": "@fletaya/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/types/index.ts",
+  "types": "./src/types/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "exports": {
+    "./types": "./src/types/index.ts",
+    "./utils": "./src/utils/index.ts",
+    "./constants": "./src/constants/index.ts"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
+  }
+}

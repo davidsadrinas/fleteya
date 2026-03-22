@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Work+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
+
+@layer base {
+  html {
+    font-family: "Instrument Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-fy-bg text-fy-text;
+  }
+  ::selection {
+    background: rgba(64, 145, 108, 0.25);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-coral text-white font-bold font-heading
+           py-3 px-6 rounded-xl transition-all hover:bg-brand-coral-dark active:scale-[0.98]
+           shadow-md shadow-brand-coral/20;
+  }
+  .btn-secondary {
+    @apply bg-white text-brand-forest border border-fy-border font-semibold font-heading
+           py-3 px-6 rounded-xl transition-all hover:bg-brand-mint-pale;
+  }
+  .btn-forest {
+    @apply bg-brand-forest text-white font-bold font-heading
+           py-3 px-6 rounded-xl transition-all hover:bg-brand-forest/90 active:scale-[0.98];
+  }
+  .card {
+    @apply bg-white border border-fy-border rounded-2xl p-4 shadow-sm;
+  }
+  .input {
+    @apply w-full bg-white border border-fy-border rounded-xl px-4 py-3
+           text-fy-text placeholder:text-fy-dim outline-none transition-colors
+           focus:border-brand-mint focus:ring-2 focus:ring-brand-mint-pale;
+  }
+  .badge-coral {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px]
+           font-bold bg-brand-coral-light/30 text-brand-coral-dark border border-brand-coral/20;
+  }
+  .badge-mint {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px]
+           font-bold bg-brand-mint-pale text-brand-forest border border-brand-mint-light/30;
+  }
+  .section-tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full bg-brand-mint-pale
+           text-brand-forest text-xs font-bold font-heading tracking-wide;
+  }
+}
