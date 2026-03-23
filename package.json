@@ -2,6 +2,7 @@
   "name": "fletaya-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.28.1",
   "scripts": {
     "dev:web": "pnpm --filter @fletaya/web dev",
     "dev:mobile": "pnpm --filter @fletaya/mobile start",
