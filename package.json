@@ -19,6 +19,7 @@
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
   },
   "devDependencies": {
+    "next": "^14.2.0",
     "prettier": "^3.2.0",
     "typescript": "^5.4.0",
     "vitest": "^2.0.0"
