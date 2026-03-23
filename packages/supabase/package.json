@@ -1,0 +1,10 @@
+{
+  "name": "@fletaya/supabase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate": "node scripts/run-sql.mjs migrations/001_initial.sql",
+    "seed": "node scripts/run-sql.mjs seed/dev.sql"
+  }
+}
