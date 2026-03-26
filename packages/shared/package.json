@@ -11,7 +11,8 @@
   "exports": {
     "./types": "./src/types/index.ts",
     "./utils": "./src/utils/index.ts",
-    "./constants": "./src/constants/index.ts"
+    "./constants": "./src/constants/index.ts",
+    "./assignment": "./src/assignment/index.ts"
   },
   "devDependencies": {
     "vitest": "^2.0.0"

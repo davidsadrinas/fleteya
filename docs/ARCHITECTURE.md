@@ -63,7 +63,8 @@ PostgreSQL con PostGIS para queries geoespaciales.
 - `profiles` → Extiende auth.users con nombre, teléfono, rol, avatar
 - `drivers` → Datos de verificación del fletero (docs, rating)
 - `vehicles` → Vehículos del fletero (múltiples por driver)
-- `shipments` → Envíos con estado, precio, descuento
+- `shipments` → Envíos con estado, precio, descuento, `assignment_strategy_id`
+- `shipment_driver_applications` → Postulaciones de fleteros a envíos abiertos; la plataforma asigna conductor
 - `shipment_legs` → Tramos con coordenadas PostGIS
 - `tracking_points` → Puntos GPS para tracking en vivo
 - `reviews` → Reseñas post-viaje
@@ -88,10 +89,18 @@ Los clientes solo ven sus envíos. Los fleteros solo ven sus datos y envíos asi
 Supabase Realtime usa WebSockets. La tabla `tracking_points` está habilitada
 para realtime via `alter publication supabase_realtime add table`.
 
+## Matching y asignación (conductores)
+
+Modelo de negocio: **el cliente publica el envío**; **los fleteros se postulan**; **FleteYa asigna on-demand** (tras cada postulación si `AUTO_ASSIGN_ON_APPLICATION`, o vía `POST .../assign`) con **`proximity_then_rating_v1` por defecto**: primero **bandas de cercanía** al retiro (GPS de la postulación y/o **fin del viaje activo** del conductor), dentro de cada banda gana la **mejor valoración** en la app. Así se prioriza **encadenar varios viajes en el día** (la “nueva ubicación” tras una entrega acerca al conductor al siguiente retiro y compite en la banda más favorable). Descuentos por tramos encadenados siguen en pricing (`packages/shared` / wizard).
+
+- Tabla `shipment_driver_applications` + RPC `last_leg_dest_coords` (service_role) para el destino del viaje en curso.
+- Postulación: `POST .../applications` → opcionalmente dispara asignación automática.
+- Lógica en **`packages/shared/src/assignment`**: `registerAssignmentStrategy()` para evolucionar reglas sin romper API.
+
 ## Pagos (MercadoPago)
 
 ```
-[Cliente] → Selecciona fletero y confirma
+[Cliente] → Confirma envío (conductor ya asignado por la plataforma) y paga
     ↓
 [API Route] → Crea preferencia MercadoPago (marketplace split)
     ↓

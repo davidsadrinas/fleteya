@@ -22,7 +22,14 @@ export const useThemeStore = create<ThemeStore>((set) => ({
 
 // Auth store
 interface AuthStore {
-  user: { id: string; email: string; name: string; role: string; avatarUrl?: string } | null;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    avatarUrl?: string;
+    phone?: string | null;
+  } | null;
   loading: boolean;
   setUser: (user: AuthStore["user"]) => void;
   setLoading: (loading: boolean) => void;

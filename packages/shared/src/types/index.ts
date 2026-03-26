@@ -73,6 +73,8 @@ export interface Shipment {
   clientId: string;
   driverId?: string;
   vehicleId?: string;
+  /** Estrategia de matching usada al asignar conductor (ej. default_v1). */
+  assignmentStrategyId?: string;
   status: ShipmentStatus;
   type: ShipmentType;
   description?: string;

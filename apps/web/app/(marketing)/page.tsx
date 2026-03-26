@@ -1,38 +1,9 @@
 import Link from "next/link";
-
-function Navbar() {
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-fy-border bg-fy-bg/80 backdrop-blur-xl">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-1">
-          <span className="text-2xl font-display font-extrabold text-fy-text">flete</span>
-          <span className="text-2xl font-display font-extrabold text-brand-amber">ya</span>
-        </Link>
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="#como-funciona" className="text-fy-soft hover:text-brand-teal-light text-sm font-medium font-heading transition-colors">
-            Cómo funciona
-          </Link>
-          <Link href="#fleteros" className="text-fy-soft hover:text-brand-teal-light text-sm font-medium font-heading transition-colors">
-            Soy fletero
-          </Link>
-          <Link href="#precios" className="text-fy-soft hover:text-brand-teal-light text-sm font-medium font-heading transition-colors">
-            Precios
-          </Link>
-          <Link href="/login" className="btn-primary text-sm !py-2 !px-5">
-            Ingresar
-          </Link>
-        </div>
-        <Link href="/login" className="md:hidden btn-primary text-sm !py-2 !px-4">
-          Ingresar
-        </Link>
-      </div>
-    </nav>
-  );
-}
+import { MarketingNavbar } from "@/components/marketing-navbar";
 
 function Hero() {
   return (
-    <section className="pt-32 pb-20 px-6 relative overflow-hidden">
+    <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-6 relative overflow-hidden">
       {/* Soft organic background shapes */}
       <div className="absolute top-20 right-0 w-72 h-72 bg-brand-mint-pale rounded-full blur-3xl opacity-40" />
       <div className="absolute bottom-0 left-10 w-56 h-56 bg-brand-sunshine-light rounded-full blur-3xl opacity-30" />
@@ -43,29 +14,34 @@ function Hero() {
           <span className="w-2 h-2 rounded-full bg-brand-teal animate-pulse" />
           Disponible en AMBA
         </div>
-        <h1 className="text-5xl md:text-7xl font-display font-extrabold mb-6 leading-tight text-fy-text">
+        <h1 className="text-[2.25rem] leading-[1.1] sm:text-5xl md:text-6xl lg:text-7xl font-display font-extrabold mb-6 text-fy-text">
           Tu flete,{" "}
           <span className="text-brand-amber">simple</span>
           <br />
           y rápido.
         </h1>
-        <p className="text-xl text-fy-soft max-w-2xl mx-auto mb-10 leading-relaxed font-body">
-          Conectamos tu envío con fleteros que vuelven vacíos.
-          Mismo servicio, hasta <span className="text-brand-amber font-bold">40% menos</span>.
-          Mudanzas, mercadería y materiales.
+        <p className="text-base sm:text-lg md:text-xl text-fy-soft max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed font-body">
+          Marketplace de fletes en AMBA: vos publicás el envío, los fleteros <strong className="text-fy-text font-semibold">se postulan</strong> y FleteYa <strong className="text-fy-text font-semibold">asigna</strong> al mejor candidato según <strong className="text-fy-text font-semibold">cercanía y reputación</strong>.
+          Aprovechá <span className="text-brand-amber font-bold">viajes de retorno</span> y <span className="text-brand-amber font-bold">tramos encadenados</span> para pagar menos.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/login?role=client" className="btn-primary text-lg !py-4 !px-8">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center max-w-lg sm:max-w-none mx-auto">
+          <Link
+            href="/login?role=client"
+            className="btn-primary text-base sm:text-lg !py-3.5 sm:!py-4 !px-6 sm:!px-8 min-h-[48px] flex items-center justify-center text-center"
+          >
             📦 Necesito un flete
           </Link>
-          <Link href="/login?role=driver" className="btn-secondary text-lg !py-4 !px-8">
+          <Link
+            href="/login?role=driver"
+            className="btn-secondary text-base sm:text-lg !py-3.5 sm:!py-4 !px-6 sm:!px-8 min-h-[48px] flex items-center justify-center text-center"
+          >
             🚛 Soy fletero
           </Link>
         </div>
-        <div className="flex items-center justify-center gap-8 mt-12 text-fy-soft text-sm font-heading">
-          <span>✓ Sin compromiso</span>
-          <span>✓ Precio cerrado</span>
-          <span>✓ Seguro incluido</span>
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 mt-12 text-fy-soft text-sm font-heading">
+          <span>✓ Publicás sin elegir fletero a mano</span>
+          <span>✓ Precio y tramos claros antes de pagar</span>
+          <span>✓ Tracking y pagos por MercadoPago</span>
         </div>
       </div>
     </section>
@@ -74,13 +50,13 @@ function Hero() {
 
 function Stats() {
   return (
-    <section className="py-16 px-6 border-y border-fy-border bg-fy-bg-warm/40">
+    <section className="py-12 sm:py-16 px-4 sm:px-6 border-y border-fy-border bg-fy-bg-warm/40">
       <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
         {[
-          { value: "40%", label: "de fletes vuelven vacíos", color: "text-brand-amber" },
-          { value: "~35%", label: "ahorro promedio", color: "text-brand-teal-light" },
-          { value: "22'", label: "tiempo promedio de match", color: "text-brand-teal" },
-          { value: "4.8★", label: "rating promedio", color: "text-brand-amber" },
+          { value: "Retorno", label: "cargas que optimizan el viaje de vuelta", color: "text-brand-amber" },
+          { value: "22%", label: "comisión transparente por viaje", color: "text-brand-teal-light" },
+          { value: "Postulá", label: "fleteros compiten; la app asigna", color: "text-brand-teal" },
+          { value: "Encadená", label: "más tramos, descuentos acumulados", color: "text-brand-amber" },
         ].map((s) => (
           <div key={s.label}>
             <div className={`text-3xl md:text-4xl font-display font-extrabold ${s.color}`}>
@@ -96,22 +72,51 @@ function Stats() {
 
 function HowItWorks() {
   return (
-    <section id="como-funciona" className="py-20 px-6">
+    <section id="como-funciona" className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
           <span className="section-tag mb-4 inline-block">Así de fácil</span>
           <h2 className="text-3xl md:text-4xl font-display font-bold text-fy-text mt-3">
             ¿Cómo funciona?
           </h2>
-          <p className="text-fy-soft mt-3 max-w-xl mx-auto">
-            En 3 pasos tenés tu flete confirmado con el mejor precio.
+          <p className="text-fy-soft mt-3 max-w-2xl mx-auto">
+            No hace falta que elijas conductor en un listado: la plataforma equipara <strong className="text-fy-text">quién está cerca</strong> (incluido quien termina un viaje y queda bien ubicado para el siguiente) con <strong className="text-fy-text">quién tiene mejor historial</strong> en la app.
           </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { step: "1", icon: "📦", title: "Cargá tu envío", desc: "Indicá qué movés, el origen, destino, y cuándo. Podés sumar tramos para mejor precio.", bg: "bg-brand-amber/10", accent: "bg-brand-amber" },
-            { step: "2", icon: "🔄", title: "Elegí tu flete", desc: "Compará fleteros verificados. Los que vuelven de otro viaje te ofrecen hasta 40% menos.", bg: "bg-brand-teal-pale", accent: "bg-brand-teal" },
-            { step: "3", icon: "📍", title: "Seguilo en vivo", desc: "Tracking GPS en tiempo real, chat con el fletero, y notificaciones de cada etapa.", bg: "bg-brand-amber/10", accent: "bg-brand-amber" },
+            {
+              step: "1",
+              icon: "📦",
+              title: "Publicás el envío",
+              desc: "Ruta, tipo de carga, ventana horaria y necesidades (ayudantes, tipo de vehículo). Podés sumar varios tramos: cuanto más encadenás, mejor suele ser el precio por kilómetro.",
+              bg: "bg-brand-amber/10",
+              accent: "bg-brand-amber",
+            },
+            {
+              step: "2",
+              icon: "🙋",
+              title: "Se postulan fleteros",
+              desc: "Conductores verificados muestran interés. En la app vas a ver el estado “esperando asignación” mientras se reúnen postulaciones y se evalúa cercanía.",
+              bg: "bg-brand-teal-pale",
+              accent: "bg-brand-teal",
+            },
+            {
+              step: "3",
+              icon: "⚖️",
+              title: "FleteYa asigna",
+              desc: "Asignación on-demand con reglas claras: primero rangos de cercanía al retiro, dentro de cada rango gana la mejor valoración. Si un fletero termina un viaje cerca de tu origen, entra con ventaja para encadenar.",
+              bg: "bg-brand-amber/10",
+              accent: "bg-brand-amber",
+            },
+            {
+              step: "4",
+              icon: "📍",
+              title: "Pagás y seguís",
+              desc: "Confirmás con precio cerrado (MercadoPago), tracking GPS durante el servicio y registro del viaje para reseñas.",
+              bg: "bg-brand-teal-pale",
+              accent: "bg-brand-teal",
+            },
           ].map((item) => (
             <div key={item.step} className="card text-center !border-transparent hover:shadow-md transition-shadow">
               <div className={`w-16 h-16 ${item.bg} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
@@ -123,7 +128,7 @@ function HowItWorks() {
               <h3 className="text-lg font-display font-bold text-fy-text mb-2">
                 {item.title}
               </h3>
-              <p className="text-fy-soft text-sm leading-relaxed">{item.desc}</p>
+              <p className="text-fy-soft text-sm leading-relaxed text-left">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -134,7 +139,7 @@ function HowItWorks() {
 
 function ForDrivers() {
   return (
-    <section id="fleteros" className="py-20 px-6 bg-brand-navy relative overflow-hidden">
+    <section id="fleteros" className="py-16 sm:py-20 px-4 sm:px-6 bg-brand-navy relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-brand-teal/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-brand-amber/10 rounded-full blur-3xl" />
 
@@ -143,7 +148,10 @@ function ForDrivers() {
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-brand-teal-light text-xs font-bold font-heading tracking-wide mb-4">
             Para fleteros
           </span>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mt-3">
+          <p className="text-brand-teal-light/90 text-sm max-w-2xl mx-auto mt-4 leading-relaxed">
+            No competís a ciegas con listados eternos: <strong className="text-white">postulás</strong> a los envíos que te cierran por ruta y horario. La app prioriza <strong className="text-white">cercanía real</strong> (tu GPS y, si tenés un viaje activo, dónde terminás) y después <strong className="text-white">tu valoración</strong>. Encadenar varios servicios en el día te acerca a los retiros siguientes y mejora tu perfil para seguir viajando con descuento al cliente.
+          </p>
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mt-10">
             No vuelvas vacío.
             <br />
             <span className="text-brand-amber">Monetizá cada kilómetro.</span>
@@ -151,10 +159,26 @@ function ForDrivers() {
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           {[
-            { icon: "💰", title: "Más ingresos", desc: "Cada viaje de retorno es ingreso neto. El costo del viaje ya está amortizado." },
-            { icon: "📱", title: "Todo en la app", desc: "Agenda, cobros, facturación y estadísticas. Sin papeles ni llamadas." },
-            { icon: "⭐", title: "Tu reputación vale", desc: "Acumulá rating y reseñas. Mejor reputación = más viajes y mejor precio." },
-            { icon: "🛡️", title: "Seguro incluido", desc: "Cobertura de responsabilidad civil mientras operás con la plataforma." },
+            {
+              icon: "🎯",
+              title: "Postulaciones claras",
+              desc: "Entrás al pool de cargas abiertas, mandás tu ubicación y FleteYa analiza quién encaja mejor para cada envío en el momento.",
+            },
+            {
+              icon: "🔗",
+              title: "Encadená el día",
+              desc: "Si terminás una entrega cerca del próximo retiro, ganás prioridad en cercanía: más viajes seguidos y menos tiempo muerto.",
+            },
+            {
+              icon: "⭐",
+              title: "Tu rating importa",
+              desc: "Dentro del mismo radio, gana quien mejor se comporta con clientes en la plataforma. Hacé foco en puntualidad y comunicación.",
+            },
+            {
+              icon: "📱",
+              title: "Operación en la app",
+              desc: "Solicitudes, estados del viaje, tracking y cobros digitalizados. Documentación de flota según las reglas del marketplace.",
+            },
           ].map((item) => (
             <div key={item.title} className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex gap-4">
               <div className="text-2xl">{item.icon}</div>
@@ -177,7 +201,7 @@ function ForDrivers() {
 
 function Reviews() {
   return (
-    <section className="py-20 px-6">
+    <section className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <span className="section-tag mb-4 inline-block">Testimonios</span>
@@ -188,8 +212,8 @@ function Reviews() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             { name: "Laura P.", role: "Cliente", text: "Mudé mi depto por la mitad de lo que me cotizaron afuera. El fletero llegó puntual y con la app pude seguir todo.", rating: 5 },
-            { name: "Carlos M.", role: "Fletero", text: "Antes volvía vacío de zona sur. Ahora siempre tengo algo para el retorno. Facturo un 60% más por mes.", rating: 5 },
-            { name: "Martín R.", role: "Cliente", text: "Necesitaba mover materiales de obra. En 15 minutos tenía fletero confirmado con precio cerrado y seguro.", rating: 5 },
+            { name: "Carlos M.", role: "Fletero", text: "Postulo a lo que me queda de camino después de cada entrega. Encadenar dos o tres por día cambió mis números.", rating: 5 },
+            { name: "Martín R.", role: "Cliente", text: "Publiqué el flete de materiales, vi el estado de asignación y cuando tocó ya tenía conductor con precio cerrado y tracking.", rating: 5 },
           ].map((r) => (
             <div key={r.name} className="card hover:shadow-md transition-shadow">
               <div className="text-brand-amber text-sm mb-3">
@@ -217,14 +241,14 @@ function Reviews() {
 
 function Pricing() {
   return (
-    <section id="precios" className="py-20 px-6 bg-fy-bg-warm/40">
+    <section id="precios" className="py-16 sm:py-20 px-4 sm:px-6 bg-fy-bg-warm/40">
       <div className="max-w-3xl mx-auto text-center">
         <span className="section-tag mb-4 inline-block">Precios</span>
         <h2 className="text-3xl font-display font-bold text-fy-text mt-3 mb-4">
           Transparente y simple
         </h2>
-        <p className="text-fy-soft mb-12">
-          Sin suscripción. Sin costos ocultos. Solo pagás cuando usás.
+        <p className="text-fy-soft mb-12 max-w-lg mx-auto">
+          Sin suscripción para publicar ni para postular. La comisión financia la plataforma, el matching y los pagos; el precio del viaje lo ves cerrado antes de pagar.
         </p>
         <div className="card max-w-md mx-auto text-left !p-6 border-brand-teal-light/30">
           <div className="text-sm text-brand-teal-light font-bold font-heading tracking-wide uppercase mb-2">
@@ -234,16 +258,16 @@ function Pricing() {
             22%
           </div>
           <div className="text-fy-soft text-sm mb-6">
-            sobre el valor del flete. Incluye seguro, tracking, y soporte.
+            sobre el valor acordado del flete. Cubre uso de la app, asignación, tracking y procesamiento de pagos (MercadoPago).
           </div>
           <div className="space-y-3">
             {[
-              "Seguro de RC incluido",
-              "Tracking GPS en tiempo real",
-              "Pagos seguros vía MercadoPago",
-              "Soporte 7 días",
-              "Descuentos por viaje de retorno",
-              "Multi-tramo con precios encadenados",
+              "Publicación y “esperando asignación” sin costo extra",
+              "Asignación por cercanía + reputación (reglas evolutivas)",
+              "Descuentos por retorno y por varios tramos en un mismo pedido",
+              "Pagos con split marketplace (comisión descontada del flujo)",
+              "Seguimiento del envío desde la app",
+              "AMBA: foco inicial, expansión futura",
             ].map((f) => (
               <div key={f} className="flex items-center gap-3 text-sm">
                 <span className="text-brand-teal-light">✓</span>
@@ -259,22 +283,31 @@ function Pricing() {
 
 function Footer() {
   return (
-    <footer className="py-12 px-6 border-t border-fy-border bg-brand-ink text-white">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-4 gap-8 mb-12">
+    <footer className="py-10 sm:py-12 px-4 sm:px-6 border-t border-fy-border bg-brand-ink text-white pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-6xl mx-auto min-w-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10 sm:mb-12">
           <div>
             <div className="flex items-center gap-1 mb-3">
               <span className="text-2xl font-display font-extrabold text-white">flete</span>
               <span className="text-2xl font-display font-extrabold text-brand-amber">ya</span>
             </div>
             <p className="text-brand-teal-light/70 text-sm leading-relaxed">
-              Tu flete, simple y rápido. Mudanzas, mercadería y materiales en AMBA.
+              Marketplace de fletes con retornos y asignación por la plataforma. Mudanzas, mercadería y más en AMBA.
             </p>
           </div>
           <div>
             <h4 className="font-heading font-bold text-sm mb-3 text-brand-teal-light">Producto</h4>
             <div className="space-y-2 text-sm text-white/50">
-              <div>Cómo funciona</div><div>Precios</div><div>Para fleteros</div><div>App móvil</div>
+              <Link href="/#como-funciona" className="block hover:text-brand-teal-light transition-colors">
+                Cómo funciona
+              </Link>
+              <Link href="/#precios" className="block hover:text-brand-teal-light transition-colors">
+                Precios
+              </Link>
+              <Link href="/#fleteros" className="block hover:text-brand-teal-light transition-colors">
+                Para fleteros
+              </Link>
+              <div className="text-white/40">App móvil (próximamente paridad total)</div>
             </div>
           </div>
           <div>
@@ -305,8 +338,8 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <main>
-      <Navbar />
+    <main className="min-w-0 overflow-x-hidden">
+      <MarketingNavbar />
       <Hero />
       <Stats />
       <HowItWorks />

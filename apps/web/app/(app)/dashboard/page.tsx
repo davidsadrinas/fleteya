@@ -1,19 +1,49 @@
 import Link from "next/link";
 
-// TODO: Fetch real data from Supabase
-// TODO: Get user session and show personalized content
-
 export default function DashboardPage() {
   return (
-    <div className="p-5">
+    <div className="px-4 sm:px-5 py-5 pb-8 max-w-full min-w-0">
       <div className="mb-6">
         <h2 className="text-xl font-display font-bold mb-1">Hola 👋</h2>
-        <p className="text-fy-soft text-sm">¿Qué necesitás mover hoy?</p>
+        <p className="text-fy-soft text-sm leading-relaxed">
+          Desde acá publicás cargas, ves el estado de asignación y entrás al seguimiento cuando tu flete esté en curso.
+        </p>
       </div>
 
-      {/* New shipment CTA */}
+      <section className="mb-6 rounded-2xl border border-fy-border bg-brand-card/50 p-4">
+        <h3 className="text-xs font-heading font-bold text-brand-teal-light uppercase tracking-wide mb-3">
+          Cómo funciona tu pedido
+        </h3>
+        <ol className="space-y-3 text-sm text-fy-soft">
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-brand-teal/20 text-brand-teal-light text-xs font-bold flex items-center justify-center">
+              1
+            </span>
+            <span>
+              <strong className="text-fy-text">Nuevo envío:</strong> cargás ruta, tipo de carga y detalles. Podés sumar tramos para mejorar el precio por kilómetro.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-brand-teal/20 text-brand-teal-light text-xs font-bold flex items-center justify-center">
+              2
+            </span>
+            <span>
+              <strong className="text-fy-text">Esperando asignación:</strong> los fleteros se postulan. La app asigna on-demand por cercanía (incluido quien termina otro viaje cerca de tu retiro) y reputación.
+            </span>
+          </li>
+          <li className="flex gap-3">
+            <span className="shrink-0 w-6 h-6 rounded-full bg-brand-teal/20 text-brand-teal-light text-xs font-bold flex items-center justify-center">
+              3
+            </span>
+            <span>
+              <strong className="text-fy-text">Confirmación y pago:</strong> precio cerrado con MercadoPago; después tracking en vivo hasta la entrega.
+            </span>
+          </li>
+        </ol>
+      </section>
+
       <Link
-        href="/(app)/shipment"
+        href="/shipment"
         className="block w-full p-5 rounded-2xl bg-gradient-to-r from-brand-teal to-brand-teal-light mb-4 relative overflow-hidden"
       >
         <div className="relative z-10">
@@ -21,10 +51,10 @@ export default function DashboardPage() {
             Nuevo envío
           </div>
           <div className="text-lg font-display font-bold text-brand-ink">
-            Cotizá y reservá tu flete
+            Publicá una carga
           </div>
-          <div className="text-xs text-brand-ink/55 mt-1">
-            Mudanzas · Mercadería · Materiales
+          <div className="text-xs text-brand-ink/55 mt-1 leading-relaxed">
+            Wizard: ruta → carga → estado de asignación → pago. Sin elegir fletero manualmente.
           </div>
         </div>
         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-4xl opacity-20">
@@ -32,62 +62,82 @@ export default function DashboardPage() {
         </div>
       </Link>
 
-      {/* Active trip */}
       <Link
-        href="/(app)/tracking"
-        className="flex items-center gap-3 p-4 rounded-xl bg-brand-card border border-brand-teal/25 mb-6"
+        href="/tracking"
+        className="flex items-center gap-3 p-4 rounded-xl bg-brand-card border border-brand-teal/25 mb-2"
       >
         <div className="w-10 h-10 rounded-xl bg-brand-teal/15 flex items-center justify-center text-xl">
           📍
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-semibold">Viaje activo</div>
-          <div className="text-xs text-fy-dim mt-0.5">
-            Palermo → Avellaneda · Ver tracking en vivo
+        <div className="flex-1 text-left">
+          <div className="text-sm font-semibold text-fy-text">Tracking en vivo</div>
+          <div className="text-xs text-fy-dim mt-0.5 leading-relaxed">
+            Cuando tengas un viaje activo vas a ver mapa, estados y datos del fletero acá. Ejemplo: Palermo → Avellaneda.
           </div>
         </div>
         <span className="text-brand-teal-light">→</span>
       </Link>
-
-      {/* Backhaul section */}
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-display font-bold">
-          🔄 Viajes de retorno
-        </h3>
-        <span className="text-brand text-xs font-semibold">Ver todos →</span>
-      </div>
-      <p className="text-fy-dim text-xs mb-3">
-        Fleteros volviendo con espacio. Hasta 40% menos.
+      <p className="text-[11px] text-fy-dim mb-6 px-1">
+        El ejemplo de “viaje activo” es ilustrativo hasta que conectemos tu historial con Supabase.
       </p>
 
-      {/* TODO: Fetch from Supabase */}
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-display font-bold">Viajes de retorno</h3>
+        <span className="text-brand-teal-light text-xs font-semibold">Pronto en vivo</span>
+      </div>
+      <p className="text-fy-dim text-xs mb-3 leading-relaxed">
+        Fletes donde el conductor aprovecha espacio en la vuelta u ofertas encadenadas: suele traducirse en menos costo para vos y más carga útil para el fletero.
+      </p>
+
       {[
-        { from: "Palermo", to: "Avellaneda", price: "8.500", time: "Hoy 16:00", space: "70%" },
-        { from: "Belgrano", to: "Quilmes", price: "15.200", time: "Hoy 18:30", space: "45%" },
+        {
+          from: "Palermo",
+          to: "Avellaneda",
+          price: "8.500",
+          time: "Hoy 16:00",
+          space: "70",
+          note: "Ejemplo",
+        },
+        {
+          from: "Belgrano",
+          to: "Quilmes",
+          price: "15.200",
+          time: "Hoy 18:30",
+          space: "45",
+          note: "Ejemplo",
+        },
       ].map((trip, i) => (
-        <div key={i} className="card mb-2 !p-3.5">
+        <div key={i} className="card mb-2 !p-3.5 opacity-90">
           <div className="flex justify-between items-start mb-2">
             <div>
               <div className="flex items-center gap-1.5 text-sm">
-                <span className="font-semibold">{trip.from}</span>
-                <span className="text-brand">→</span>
-                <span className="font-semibold">{trip.to}</span>
+                <span className="font-semibold text-fy-text">{trip.from}</span>
+                <span className="text-brand-teal-light">→</span>
+                <span className="font-semibold text-fy-text">{trip.to}</span>
               </div>
+              <span className="text-[10px] text-fy-dim uppercase tracking-wide">{trip.note}</span>
             </div>
-            <span className="badge bg-brand/10 text-brand border border-brand/20">
-              -{100 - parseInt(trip.space)}% dto
+            <span className="badge bg-brand-amber/15 text-brand-amber border border-brand-amber/25">
+              ~{100 - parseInt(trip.space, 10)}% menos vs ida sola
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-fy-soft text-[11px]">
-              🕐 {trip.time} · 📦 {trip.space} libre
+              🕐 {trip.time} · 📦 {trip.space}% capacidad libre
             </span>
-            <span className="text-brand font-bold font-display">
-              ${trip.price}
-            </span>
+            <span className="text-brand-amber font-bold font-display">${trip.price}</span>
           </div>
         </div>
       ))}
+
+      <Link
+        href="/profile"
+        className="mt-6 flex items-center gap-3 p-3 rounded-xl border border-fy-border bg-brand-surface/30 text-sm text-fy-soft hover:border-brand-teal/30 transition-colors"
+      >
+        <span className="text-lg">◉</span>
+        <span>Perfil, documentación (fleteros) y datos de cuenta</span>
+        <span className="ml-auto text-brand-teal-light">→</span>
+      </Link>
     </div>
   );
 }

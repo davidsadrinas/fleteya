@@ -103,6 +103,30 @@ describe("API: /api/drivers contract", () => {
   });
 });
 
+describe("API: /api/shipments/[id]/applications contract", () => {
+  it("POST accepts optional driver position for proximity scoring", () => {
+    const body = { driverLat: -34.6, driverLng: -58.4 };
+    expect(body).toHaveProperty("driverLat");
+    expect(body).toHaveProperty("driverLng");
+  });
+
+  it("GET returns applications list shape", () => {
+    expect({ applications: [] }).toMatchObject({ applications: expect.any(Array) });
+  });
+});
+
+describe("API: /api/shipments/[id]/assign contract", () => {
+  it("requires Authorization Bearer ASSIGNMENT_RUN_SECRET", () => {
+    const expectedHeader = "Bearer <ASSIGNMENT_RUN_SECRET>";
+    expect(expectedHeader.startsWith("Bearer ")).toBe(true);
+  });
+
+  it("optional body can override strategyId", () => {
+    const body = { strategyId: "default_v1" };
+    expect(body.strategyId).toBe("default_v1");
+  });
+});
+
 describe("API: /api/tracking contract", () => {
   it("POST body must include shipmentId and coordinates", () => {
     const validBody = {

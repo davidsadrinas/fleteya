@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 function getEdgeSupabaseEnv(): { url: string; key: string } | null {
@@ -12,7 +13,12 @@ function getEdgeSupabaseEnv(): { url: string; key: string } | null {
   return { url: url.trim(), key: key.trim() };
 }
 
-export async function updateSession(request: NextRequest) {
+export type SessionUpdateResult = {
+  response: NextResponse;
+  user: User | null;
+};
+
+export async function updateSession(request: NextRequest): Promise<SessionUpdateResult> {
   const supabaseResponse = NextResponse.next({
     request: {
       headers: request.headers,
@@ -21,10 +27,11 @@ export async function updateSession(request: NextRequest) {
 
   const env = getEdgeSupabaseEnv();
   if (!env) {
-    return supabaseResponse;
+    return { response: supabaseResponse, user: null };
   }
 
   let mutableResponse = supabaseResponse;
+  let user: User | null = null;
 
   try {
     const supabase = createServerClient(env.url, env.key, {
@@ -46,10 +53,11 @@ export async function updateSession(request: NextRequest) {
       },
     });
 
-    await supabase.auth.getUser();
+    const { data } = await supabase.auth.getUser();
+    user = data.user ?? null;
   } catch {
-    return supabaseResponse;
+    return { response: supabaseResponse, user: null };
   }
 
-  return mutableResponse;
+  return { response: mutableResponse, user };
 }

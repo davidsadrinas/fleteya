@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const role = searchParams.get("role") || "client";
+  const view = searchParams.get("view");
 
   let query = supabase
     .from("shipments")
@@ -18,7 +19,22 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (role === "driver") {
-    query = query.eq("driver_id", user.id);
+    const { data: driverRow, error: driverLookupError } = await supabase
+      .from("drivers")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (driverLookupError) {
+      return NextResponse.json({ error: driverLookupError.message }, { status: 500 });
+    }
+    if (!driverRow) {
+      return NextResponse.json({ shipments: [] });
+    }
+    if (view === "open") {
+      query = query.is("driver_id", null).eq("status", "pending");
+    } else {
+      query = query.eq("driver_id", driverRow.id);
+    }
   } else {
     query = query.eq("client_id", user.id);
   }
