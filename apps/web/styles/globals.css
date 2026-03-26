@@ -4,6 +4,16 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Work+Sans:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap");
 
+/* FleteYa — Manual de marca v1.0 · tema oscuro (Ink / Teal / Amber / Snow) */
+:root {
+  --fy-bg: #0f172a;
+  --fy-bg-warm: #1e3a5f;
+  --fy-text: #f8fafc;
+  --fy-soft: #94a3b8;
+  --fy-dim: #64748b;
+  --fy-border: rgba(248, 250, 252, 0.12);
+}
+
 @layer base {
   html {
     font-family: "Instrument Sans", sans-serif;
@@ -11,45 +21,48 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body {
-    @apply bg-fy-bg text-fy-text;
+    @apply bg-fy-bg text-fy-text antialiased;
   }
   ::selection {
-    background: rgba(64, 145, 108, 0.25);
+    background: rgba(13, 148, 136, 0.35);
   }
 }
 
 @layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-teal-light to-brand-amber bg-clip-text text-transparent;
+  }
   .btn-primary {
-    @apply bg-brand-coral text-white font-bold font-heading
-           py-3 px-6 rounded-xl transition-all hover:bg-brand-coral-dark active:scale-[0.98]
-           shadow-md shadow-brand-coral/20;
+    @apply bg-brand-teal text-brand-snow font-bold font-heading
+           py-3 px-6 rounded-md transition-all hover:bg-brand-teal-dark active:scale-[0.98]
+           shadow-lg shadow-brand-teal/25;
   }
   .btn-secondary {
-    @apply bg-white text-brand-forest border border-fy-border font-semibold font-heading
-           py-3 px-6 rounded-xl transition-all hover:bg-brand-mint-pale;
+    @apply bg-white/5 text-fy-text border border-fy-border font-semibold font-heading
+           py-3 px-6 rounded-md transition-all hover:bg-white/10 hover:border-brand-teal-light/30;
   }
   .btn-forest {
-    @apply bg-brand-forest text-white font-bold font-heading
-           py-3 px-6 rounded-xl transition-all hover:bg-brand-forest/90 active:scale-[0.98];
+    @apply bg-brand-teal-dark text-brand-snow font-bold font-heading
+           py-3 px-6 rounded-md transition-all hover:bg-brand-teal-dark/90 active:scale-[0.98];
   }
   .card {
-    @apply bg-white border border-fy-border rounded-2xl p-4 shadow-sm;
+    @apply bg-brand-surface/80 border border-fy-border rounded-xl p-4 shadow-lg shadow-black/20 backdrop-blur-sm;
   }
   .input {
-    @apply w-full bg-white border border-fy-border rounded-xl px-4 py-3
+    @apply w-full bg-brand-ink/50 border border-fy-border rounded-md px-4 py-3
            text-fy-text placeholder:text-fy-dim outline-none transition-colors
-           focus:border-brand-mint focus:ring-2 focus:ring-brand-mint-pale;
+           focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20;
   }
   .badge-coral {
     @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px]
-           font-bold bg-brand-coral-light/30 text-brand-coral-dark border border-brand-coral/20;
+           font-bold bg-brand-amber/15 text-brand-amber border border-brand-amber/25;
   }
   .badge-mint {
     @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px]
-           font-bold bg-brand-mint-pale text-brand-forest border border-brand-mint-light/30;
+           font-bold bg-brand-teal-pale text-brand-teal-light border border-brand-teal/25;
   }
   .section-tag {
-    @apply inline-flex items-center px-3 py-1 rounded-full bg-brand-mint-pale
-           text-brand-forest text-xs font-bold font-heading tracking-wide;
+    @apply inline-flex items-center px-3 py-1 rounded-full bg-brand-teal-pale
+           text-brand-teal-light text-xs font-bold font-heading tracking-wide border border-brand-teal/20;
   }
 }

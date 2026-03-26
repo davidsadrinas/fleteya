@@ -14,16 +14,16 @@ export default function DashboardPage() {
       {/* New shipment CTA */}
       <Link
         href="/(app)/shipment"
-        className="block w-full p-5 rounded-2xl bg-gradient-to-r from-brand to-brand-cyan mb-4 relative overflow-hidden"
+        className="block w-full p-5 rounded-2xl bg-gradient-to-r from-brand-teal to-brand-teal-light mb-4 relative overflow-hidden"
       >
         <div className="relative z-10">
-          <div className="text-xs font-semibold text-black/50 tracking-wider uppercase mb-1">
+          <div className="text-xs font-semibold text-brand-ink/60 tracking-wider uppercase mb-1">
             Nuevo envío
           </div>
-          <div className="text-lg font-display font-bold text-brand-dark">
+          <div className="text-lg font-display font-bold text-brand-ink">
             Cotizá y reservá tu flete
           </div>
-          <div className="text-xs text-black/40 mt-1">
+          <div className="text-xs text-brand-ink/55 mt-1">
             Mudanzas · Mercadería · Materiales
           </div>
         </div>
@@ -35,9 +35,9 @@ export default function DashboardPage() {
       {/* Active trip */}
       <Link
         href="/(app)/tracking"
-        className="flex items-center gap-3 p-4 rounded-xl bg-brand-card border border-blue-500/20 mb-6"
+        className="flex items-center gap-3 p-4 rounded-xl bg-brand-card border border-brand-teal/25 mb-6"
       >
-        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-xl">
+        <div className="w-10 h-10 rounded-xl bg-brand-teal/15 flex items-center justify-center text-xl">
           📍
         </div>
         <div className="flex-1">
@@ -46,7 +46,7 @@ export default function DashboardPage() {
             Palermo → Avellaneda · Ver tracking en vivo
           </div>
         </div>
-        <span className="text-blue-400">→</span>
+        <span className="text-brand-teal-light">→</span>
       </Link>
 
       {/* Backhaul section */}
