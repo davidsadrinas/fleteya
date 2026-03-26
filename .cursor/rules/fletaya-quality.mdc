@@ -1,0 +1,42 @@
+---
+description: Tests obligatorios, lint, revisión de código y auth social (Google / email / Facebook flag)
+alwaysApply: true
+---
+
+# FleteYa — Calidad y auth (siempre)
+
+## Después de implementar o cambiar código
+
+1. **Tests** — toda feature o fix sustantivo debe incluir cobertura donde encaje:
+   - Unit: `lib/**`, schemas Zod, stores, utils.
+   - Integración: `middleware`, `app/api/**`, `app/auth/**`.
+   - RTL (`@testing-library/react`): pantallas y flujos con formularios o estado visible.
+   - Ubicación: `apps/web/__tests__/**` (Vitest, `pnpm test:web` desde la raíz del monorepo).
+
+2. **Lint** — `pnpm lint` desde la raíz; corregir errores en archivos tocados.
+
+3. **No cerrar la tarea** sin haber ejecutado al menos `pnpm test:web` y `pnpm lint` en limpio (salvo que el cambio sea solo documentación y el usuario lo aclare).
+
+## Login con redes sociales
+
+- **Google** y **magic link (email)** están siempre en la UI de `/login`; OAuth se configura en **Supabase** (Providers + URL redirects). Callback: `{origin}/auth/callback`.
+- **Facebook** (y futuras redes): el botón está **desactivado en UI** salvo `NEXT_PUBLIC_ENABLE_FACEBOOK_AUTH=true` en `.env` / Vercel; igual hay que activar el provider en Supabase + Meta. Ver `CURSOR_GUIDE.md` secciones “Login con redes sociales” y PASO 0 §2b.
+
+## Web responsive + paridad con mobile
+
+- La web debe verse bien en **móvil (PWA/navegador)** y en escritorio: breakpoints Tailwind, `min-w-0` / `overflow-x-hidden` donde haga falta, **`100dvh`** para altura útil con barra del sistema, **`env(safe-area-inset-*)`** en header/footer/nav.
+- Mismos flujos que **`apps/mobile`** (auth, onboarding, envíos, tracking); al cambiar copy o pasos, considerar ambos clientes.
+
+## Revisión de código
+
+- Preferí cambios acotados; TypeScript estricto sin `any`.
+- Respetar RLS de Supabase en queries nuevas.
+- UI en español (Argentina); identificadores de código en inglés.
+
+## App Store (mobile)
+
+- No usar en metadata ni copy de usuario términos tipo “IA”, “ChatGPT”, “hecho con IA”. El producto es marketplace/logística, no una app de IA salvo que exista función real documentada. Ver `docs/APP_STORE_COMPLIANCE.md`.
+
+## Claude Code / otros agentes
+
+Reutilizar esta misma política en instrucciones del proyecto y exigir explícitamente tests + lint acorde a `CURSOR_GUIDE.md`.
