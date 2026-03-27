@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthSync } from "@/components/auth-sync";
 import { OnboardingGate } from "@/components/onboarding-gate";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,13 +12,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         >
           <header className="px-4 sm:px-5 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-fy-border flex items-center justify-between shrink-0">
             <span className="text-lg sm:text-xl font-display font-black gradient-text">FleteYa</span>
-            <Link
-              href="/settings"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-fy-dim text-sm bg-brand-card border border-fy-border rounded-lg px-3"
-              aria-label="Configuración"
-            >
-              ⚙️
-            </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link
+                href="/settings"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-fy-dim text-sm bg-brand-card border border-fy-border rounded-lg px-3"
+                aria-label="Configuración"
+              >
+                ⚙️
+              </Link>
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-0">{children}</main>

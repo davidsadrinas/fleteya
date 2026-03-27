@@ -1,7 +1,58 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
+import type { Shipment } from "@shared/types";
+import { supabase } from "@/lib/supabase";
+
+type ShipmentRow = {
+  id: string;
+  status: Shipment["status"];
+  final_price: number | null;
+  type: Shipment["type"] | null;
+  created_at: string;
+  is_backhaul: boolean | null;
+};
 
 export default function HomeScreen() {
+  const [loading, setLoading] = useState(true);
+  const [activeShipment, setActiveShipment] = useState<ShipmentRow | null>(null);
+  const [backhaulOptions, setBackhaulOptions] = useState<ShipmentRow[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) {
+        setLoading(false);
+        router.replace("/auth/login");
+        return;
+      }
+
+      const { data: shipments } = await supabase
+        .from("shipments")
+        .select("id,status,final_price,type,created_at,is_backhaul")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      const shipmentRows = ((shipments as ShipmentRow[] | null) ?? []).filter(Boolean);
+      const active = shipmentRows.find(
+        (item) => item.status !== "delivered" && item.status !== "cancelled"
+      );
+      setActiveShipment(active ?? null);
+      setBackhaulOptions(shipmentRows.filter((item) => Boolean(item.is_backhaul)).slice(0, 4));
+      setLoading(false);
+    };
+
+    void load();
+  }, []);
+
+  const activeLabel = useMemo(() => {
+    if (!activeShipment) return "Todavia no tenes viajes activos";
+    return `${activeShipment.type ?? "envio"} · ${activeShipment.status}`;
+  }, [activeShipment]);
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#FDF6EC" }}
@@ -15,9 +66,15 @@ export default function HomeScreen() {
         ¿Qué necesitás mover hoy?
       </Text>
 
+      {loading ? (
+        <View style={{ marginVertical: 18 }}>
+          <ActivityIndicator color="#40916C" />
+        </View>
+      ) : null}
+
       {/* New shipment CTA */}
       <TouchableOpacity
-        onPress={() => router.push("/shipment")}
+        onPress={() => router.push("/shipment/new")}
         style={{
           padding: 20,
           borderRadius: 16,
@@ -39,7 +96,11 @@ export default function HomeScreen() {
 
       {/* Active trip */}
       <TouchableOpacity
-        onPress={() => router.push("/tracking")}
+        onPress={() => {
+          if (activeShipment?.id) {
+            router.push(`/tracking/${activeShipment.id}`);
+          }
+        }}
         style={{
           flexDirection: "row",
           alignItems: "center",
@@ -64,7 +125,7 @@ export default function HomeScreen() {
             Viaje activo
           </Text>
           <Text style={{ color: "#B2BEC3", fontSize: 12, marginTop: 2 }}>
-            Palermo → Avellaneda · Ver tracking
+            {activeLabel}
           </Text>
         </View>
         <Text style={{ color: "#40916C", fontSize: 16 }}>→</Text>
@@ -78,12 +139,27 @@ export default function HomeScreen() {
         Fleteros volviendo con espacio. Hasta 40% menos.
       </Text>
 
-      {[
-        { from: "Palermo", to: "Avellaneda", price: "8.500", time: "Hoy 16:00", space: "70%" },
-        { from: "Belgrano", to: "Quilmes", price: "15.200", time: "Hoy 18:30", space: "45%" },
-      ].map((trip, i) => (
+      {(backhaulOptions.length
+        ? backhaulOptions.map((trip) => ({
+            id: trip.id,
+            from: "Origen",
+            to: "Destino",
+            price: Number(trip.final_price ?? 0).toLocaleString("es-AR"),
+            time: new Date(trip.created_at).toLocaleString("es-AR"),
+            space: "50%",
+          }))
+        : [
+            {
+              id: "sample-1",
+              from: "Palermo",
+              to: "Avellaneda",
+              price: "8.500",
+              time: "Hoy 16:00",
+              space: "70%",
+            },
+          ]).map((trip) => (
         <View
-          key={i}
+          key={trip.id}
           style={{
             backgroundColor: "#FFFFFF",
             borderRadius: 14,

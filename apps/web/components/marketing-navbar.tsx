@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-const links = [
-  { href: "#como-funciona", label: "Cómo funciona" },
-  { href: "#fleteros", label: "Soy fletero" },
-  { href: "#precios", label: "Precios" },
-] as const;
+import { MARKETING_NAV_CTA, MARKETING_NAV_LINKS } from "@/lib/content/institutional-web";
 
 export function MarketingNavbar() {
   const [open, setOpen] = useState(false);
@@ -29,7 +24,7 @@ export function MarketingNavbar() {
         </Link>
 
         <div className="hidden md:flex items-center gap-6 lg:gap-8">
-          {links.map((l) => (
+          {MARKETING_NAV_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -38,8 +33,8 @@ export function MarketingNavbar() {
               {l.label}
             </Link>
           ))}
-          <Link href="/login" className="btn-primary text-sm !py-2.5 !px-5">
-            Ingresar
+          <Link href={MARKETING_NAV_CTA.href} className="btn-primary text-sm !py-2.5 !px-5">
+            {MARKETING_NAV_CTA.label}
           </Link>
         </div>
 
@@ -54,10 +49,10 @@ export function MarketingNavbar() {
             {open ? "Cerrar" : "Menú"}
           </button>
           <Link
-            href="/login"
+            href={MARKETING_NAV_CTA.href}
             className="btn-primary text-sm !py-2.5 !px-4 whitespace-nowrap min-h-[44px] flex items-center"
           >
-            Ingresar
+            {MARKETING_NAV_CTA.label}
           </Link>
         </div>
       </div>
@@ -68,7 +63,7 @@ export function MarketingNavbar() {
           className="md:hidden border-t border-fy-border bg-fy-bg/95 backdrop-blur-xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
         >
           <ul className="py-2 space-y-1">
-            {links.map((l) => (
+            {MARKETING_NAV_LINKS.map((l) => (
               <li key={l.href}>
                 <Link
                   href={l.href}

@@ -1,3 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
+"use client";
+
+import { useThemeStore } from "@/lib/stores";
+
 const SECTIONS = [
   {
     title: "Cuenta",
@@ -50,6 +55,10 @@ const SECTIONS = [
 ];
 
 export default function SettingsPage() {
+  const mode = useThemeStore((s) => s.mode);
+  const resolved = useThemeStore((s) => s.resolved);
+  const setMode = useThemeStore((s) => s.setMode);
+
   return (
     <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0 text-left">
       <div className="text-center mb-6">
@@ -59,6 +68,30 @@ export default function SettingsPage() {
           Centro único para cuenta, avisos y pagos. Los toggles y formularios se van activando según avance el producto.
         </p>
       </div>
+
+      <section className="mb-6 rounded-2xl border border-fy-border bg-brand-card/40 p-4">
+        <h3 className="text-xs font-heading font-bold text-brand-coral uppercase tracking-wide mb-3">
+          Tema
+        </h3>
+        <p className="text-xs text-fy-dim mb-3">
+          Modo actual: <span className="text-fy-text">{mode}</span> · resuelto:{" "}
+          <span className="text-fy-text">{resolved}</span>
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {(["light", "dark", "system"] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setMode(opt)}
+              className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
+                mode === opt ? "border-brand-teal-light bg-brand-teal/10 text-brand-teal-light" : "border-fy-border"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <div className="space-y-6">
         {SECTIONS.map((sec) => (

@@ -116,6 +116,42 @@ export interface TrackingPoint {
   timestamp: string;
 }
 
+export type EvidenceStage = "pickup" | "delivery";
+
+export interface ShipmentEvidence {
+  id: string;
+  shipmentId: string;
+  uploadedBy: string;
+  stage: EvidenceStage;
+  fileUrl: string;
+  note?: string;
+  createdAt: string;
+}
+
+export interface ShipmentChatMessage {
+  id: string;
+  shipmentId: string;
+  senderUserId: string;
+  body: string;
+  quickTag?: string;
+  createdAt: string;
+}
+
+export type DisputeStatus = "open" | "under_review" | "resolved" | "rejected";
+
+export interface ShipmentDispute {
+  id: string;
+  shipmentId: string;
+  reportedBy: string;
+  reason: string;
+  description?: string;
+  evidenceUrls: string[];
+  status: DisputeStatus;
+  resolutionNote?: string;
+  resolvedAt?: string;
+  createdAt: string;
+}
+
 // Review
 export interface Review {
   id: string;

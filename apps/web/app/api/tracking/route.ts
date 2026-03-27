@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { trackingPointSchema } from "@/lib/schemas";
+import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 
 // POST: Driver sends GPS position
 export async function POST(req: NextRequest) {
   const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const ip = getRequesterIp(req.headers);
+  const rate = enforceRateLimit({
+    key: `tracking:post:${user.id}:${ip}`,
+    max: 240,
+    windowMs: 60_000,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Rate limit excedido" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
 
   const body = await req.json();
   const parsed = trackingPointSchema.safeParse(body);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { createShipmentSchema } from "@/lib/schemas";
 import { COMMISSION } from "@shared/types";
+import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   const supabase = createServerSupabase();
@@ -51,6 +52,19 @@ export async function POST(req: NextRequest) {
   const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const ip = getRequesterIp(req.headers);
+  const rate = enforceRateLimit({
+    key: `shipments:create:${user.id}:${ip}`,
+    max: 15,
+    windowMs: 15 * 60_000,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Rate limit excedido" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } }
+    );
+  }
 
   const body = await req.json();
   const parsed = createShipmentSchema.safeParse(body);

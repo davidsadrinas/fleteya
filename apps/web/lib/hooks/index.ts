@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase-client";
 import { useTrackingStore } from "@/lib/stores";
 
@@ -13,20 +13,22 @@ export function useSupabaseQuery<T>(
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const queryColumn = query?.column;
+  const queryValue = query?.value;
 
   useEffect(() => {
     if (!enabled) return;
     const fetch = async () => {
       setLoading(true);
       let q = supabase.from(table).select("*");
-      if (query) q = q.eq(query.column, query.value);
+      if (queryColumn && queryValue) q = q.eq(queryColumn, queryValue);
       const { data, error } = await q;
       if (error) setError(error.message);
       else setData(data as T[]);
       setLoading(false);
     };
     fetch();
-  }, [table, query?.value, enabled]);
+  }, [table, queryColumn, queryValue, enabled]);
 
   return { data, loading, error };
 }
@@ -123,9 +125,19 @@ export function useRealtimeShipmentStatus(shipmentId: string | null) {
 // Driver location sharing (for driver app)
 export function useShareLocation(shipmentId: string | null) {
   const [sharing, setSharing] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+
+  const stop = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setSharing(false);
+  }, []);
 
   const start = useCallback(async () => {
     if (!shipmentId || !navigator.geolocation) return;
+    if (watchIdRef.current !== null) return;
     setSharing(true);
 
     const watchId = navigator.geolocation.watchPosition(
@@ -140,12 +152,10 @@ export function useShareLocation(shipmentId: string | null) {
       (err) => console.error("Geolocation error:", err),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      setSharing(false);
-    };
+    watchIdRef.current = watchId;
   }, [shipmentId]);
 
-  return { sharing, start };
+  useEffect(() => stop, [stop]);
+
+  return { sharing, start, stop };
 }

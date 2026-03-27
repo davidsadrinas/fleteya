@@ -1,5 +1,20 @@
 import Link from "next/link";
 import { MarketingNavbar } from "@/components/marketing-navbar";
+import {
+  FOOTER_PRODUCT_LINKS,
+  FOOTER_COMPANY_LINKS,
+  FOOTER_LEGAL_LINKS,
+  FOOTER_SECTIONS,
+  FOOTER_SOCIAL_LINKS,
+  INSTITUTIONAL_WEB_RESUME,
+  MARKETING_FAQ,
+  MARKETING_FOR_DRIVERS,
+  MARKETING_HERO,
+  MARKETING_HOW_IT_WORKS,
+  MARKETING_PRICING,
+  MARKETING_REVIEWS,
+  MARKETING_STATS,
+} from "@/lib/content/institutional-web";
 
 function Hero() {
   return (
@@ -12,36 +27,37 @@ function Hero() {
       <div className="max-w-4xl mx-auto text-center relative z-10">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-teal-pale border border-brand-teal-light/30 text-brand-teal-light text-sm font-semibold font-heading mb-8">
           <span className="w-2 h-2 rounded-full bg-brand-teal animate-pulse" />
-          Disponible en AMBA
+          {MARKETING_HERO.badge}
         </div>
         <h1 className="text-[2.25rem] leading-[1.1] sm:text-5xl md:text-6xl lg:text-7xl font-display font-extrabold mb-6 text-fy-text">
-          Tu flete,{" "}
-          <span className="text-brand-amber">simple</span>
+          {MARKETING_HERO.titleStart}{" "}
+          <span className="text-brand-amber">{MARKETING_HERO.titleAccent}</span>
           <br />
-          y rápido.
+          {MARKETING_HERO.titleEnd}
         </h1>
         <p className="text-base sm:text-lg md:text-xl text-fy-soft max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed font-body">
-          Marketplace de fletes en AMBA: vos publicás el envío, los fleteros <strong className="text-fy-text font-semibold">se postulan</strong> y FleteYa <strong className="text-fy-text font-semibold">asigna</strong> al mejor candidato según <strong className="text-fy-text font-semibold">cercanía y reputación</strong>.
-          Aprovechá <span className="text-brand-amber font-bold">viajes de retorno</span> y <span className="text-brand-amber font-bold">tramos encadenados</span> para pagar menos.
+          {MARKETING_HERO.description}
         </p>
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center max-w-lg sm:max-w-none mx-auto">
           <Link
-            href="/login?role=client"
+            href={MARKETING_HERO.ctaClient.href}
+            data-marketing-event="hero_cta_client"
             className="btn-primary text-base sm:text-lg !py-3.5 sm:!py-4 !px-6 sm:!px-8 min-h-[48px] flex items-center justify-center text-center"
           >
-            📦 Necesito un flete
+            {MARKETING_HERO.ctaClient.label}
           </Link>
           <Link
-            href="/login?role=driver"
+            href={MARKETING_HERO.ctaDriver.href}
+            data-marketing-event="hero_cta_driver"
             className="btn-secondary text-base sm:text-lg !py-3.5 sm:!py-4 !px-6 sm:!px-8 min-h-[48px] flex items-center justify-center text-center"
           >
-            🚛 Soy fletero
+            {MARKETING_HERO.ctaDriver.label}
           </Link>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 mt-12 text-fy-soft text-sm font-heading">
-          <span>✓ Publicás sin elegir fletero a mano</span>
-          <span>✓ Precio y tramos claros antes de pagar</span>
-          <span>✓ Tracking y pagos por MercadoPago</span>
+          {MARKETING_HERO.highlights.map((highlight) => (
+            <span key={highlight}>{highlight}</span>
+          ))}
         </div>
       </div>
     </section>
@@ -52,14 +68,9 @@ function Stats() {
   return (
     <section className="py-12 sm:py-16 px-4 sm:px-6 border-y border-fy-border bg-fy-bg-warm/40">
       <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-        {[
-          { value: "Retorno", label: "cargas que optimizan el viaje de vuelta", color: "text-brand-amber" },
-          { value: "22%", label: "comisión transparente por viaje", color: "text-brand-teal-light" },
-          { value: "Postulá", label: "fleteros compiten; la app asigna", color: "text-brand-teal" },
-          { value: "Encadená", label: "más tramos, descuentos acumulados", color: "text-brand-amber" },
-        ].map((s) => (
+        {MARKETING_STATS.map((s) => (
           <div key={s.label}>
-            <div className={`text-3xl md:text-4xl font-display font-extrabold ${s.color}`}>
+            <div className={`text-3xl md:text-4xl font-display font-extrabold ${s.colorClass}`}>
               {s.value}
             </div>
             <div className="text-fy-soft text-sm mt-1 font-body">{s.label}</div>
@@ -75,54 +86,21 @@ function HowItWorks() {
     <section id="como-funciona" className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-16">
-          <span className="section-tag mb-4 inline-block">Así de fácil</span>
+          <span className="section-tag mb-4 inline-block">{MARKETING_HOW_IT_WORKS.sectionTag}</span>
           <h2 className="text-3xl md:text-4xl font-display font-bold text-fy-text mt-3">
-            ¿Cómo funciona?
+            {MARKETING_HOW_IT_WORKS.title}
           </h2>
           <p className="text-fy-soft mt-3 max-w-2xl mx-auto">
-            No hace falta que elijas conductor en un listado: la plataforma equipara <strong className="text-fy-text">quién está cerca</strong> (incluido quien termina un viaje y queda bien ubicado para el siguiente) con <strong className="text-fy-text">quién tiene mejor historial</strong> en la app.
+            {MARKETING_HOW_IT_WORKS.intro}
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              step: "1",
-              icon: "📦",
-              title: "Publicás el envío",
-              desc: "Ruta, tipo de carga, ventana horaria y necesidades (ayudantes, tipo de vehículo). Podés sumar varios tramos: cuanto más encadenás, mejor suele ser el precio por kilómetro.",
-              bg: "bg-brand-amber/10",
-              accent: "bg-brand-amber",
-            },
-            {
-              step: "2",
-              icon: "🙋",
-              title: "Se postulan fleteros",
-              desc: "Conductores verificados muestran interés. En la app vas a ver el estado “esperando asignación” mientras se reúnen postulaciones y se evalúa cercanía.",
-              bg: "bg-brand-teal-pale",
-              accent: "bg-brand-teal",
-            },
-            {
-              step: "3",
-              icon: "⚖️",
-              title: "FleteYa asigna",
-              desc: "Asignación on-demand con reglas claras: primero rangos de cercanía al retiro, dentro de cada rango gana la mejor valoración. Si un fletero termina un viaje cerca de tu origen, entra con ventaja para encadenar.",
-              bg: "bg-brand-amber/10",
-              accent: "bg-brand-amber",
-            },
-            {
-              step: "4",
-              icon: "📍",
-              title: "Pagás y seguís",
-              desc: "Confirmás con precio cerrado (MercadoPago), tracking GPS durante el servicio y registro del viaje para reseñas.",
-              bg: "bg-brand-teal-pale",
-              accent: "bg-brand-teal",
-            },
-          ].map((item) => (
+          {MARKETING_HOW_IT_WORKS.steps.map((item) => (
             <div key={item.step} className="card text-center !border-transparent hover:shadow-md transition-shadow">
-              <div className={`w-16 h-16 ${item.bg} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
+              <div className={`w-16 h-16 ${item.bgClass} rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4`}>
                 {item.icon}
               </div>
-              <div className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${item.accent} text-white text-xs font-bold font-heading mb-3`}>
+              <div className={`inline-flex items-center justify-center w-7 h-7 rounded-full ${item.accentClass} text-white text-xs font-bold font-heading mb-3`}>
                 {item.step}
               </div>
               <h3 className="text-lg font-display font-bold text-fy-text mb-2">
@@ -146,40 +124,19 @@ function ForDrivers() {
       <div className="max-w-4xl mx-auto relative z-10">
         <div className="text-center mb-12">
           <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-brand-teal-light text-xs font-bold font-heading tracking-wide mb-4">
-            Para fleteros
+            {MARKETING_FOR_DRIVERS.tag}
           </span>
           <p className="text-brand-teal-light/90 text-sm max-w-2xl mx-auto mt-4 leading-relaxed">
-            No competís a ciegas con listados eternos: <strong className="text-white">postulás</strong> a los envíos que te cierran por ruta y horario. La app prioriza <strong className="text-white">cercanía real</strong> (tu GPS y, si tenés un viaje activo, dónde terminás) y después <strong className="text-white">tu valoración</strong>. Encadenar varios servicios en el día te acerca a los retiros siguientes y mejora tu perfil para seguir viajando con descuento al cliente.
+            {MARKETING_FOR_DRIVERS.intro}
           </p>
           <h2 className="text-3xl md:text-4xl font-display font-bold text-white mt-10">
-            No vuelvas vacío.
+            {MARKETING_FOR_DRIVERS.titleLine1}
             <br />
-            <span className="text-brand-amber">Monetizá cada kilómetro.</span>
+            <span className="text-brand-amber">{MARKETING_FOR_DRIVERS.titleLine2}</span>
           </h2>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
-          {[
-            {
-              icon: "🎯",
-              title: "Postulaciones claras",
-              desc: "Entrás al pool de cargas abiertas, mandás tu ubicación y FleteYa analiza quién encaja mejor para cada envío en el momento.",
-            },
-            {
-              icon: "🔗",
-              title: "Encadená el día",
-              desc: "Si terminás una entrega cerca del próximo retiro, ganás prioridad en cercanía: más viajes seguidos y menos tiempo muerto.",
-            },
-            {
-              icon: "⭐",
-              title: "Tu rating importa",
-              desc: "Dentro del mismo radio, gana quien mejor se comporta con clientes en la plataforma. Hacé foco en puntualidad y comunicación.",
-            },
-            {
-              icon: "📱",
-              title: "Operación en la app",
-              desc: "Solicitudes, estados del viaje, tracking y cobros digitalizados. Documentación de flota según las reglas del marketplace.",
-            },
-          ].map((item) => (
+          {MARKETING_FOR_DRIVERS.features.map((item) => (
             <div key={item.title} className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-2xl p-5 flex gap-4">
               <div className="text-2xl">{item.icon}</div>
               <div>
@@ -190,8 +147,12 @@ function ForDrivers() {
           ))}
         </div>
         <div className="text-center mt-10">
-          <Link href="/login?role=driver" className="btn-primary text-lg !py-4 !px-8">
-            Registrarme como fletero →
+          <Link
+            href={MARKETING_FOR_DRIVERS.cta.href}
+            data-marketing-event="drivers_cta_register"
+            className="btn-primary text-lg !py-4 !px-8"
+          >
+            {MARKETING_FOR_DRIVERS.cta.label}
           </Link>
         </div>
       </div>
@@ -204,17 +165,13 @@ function Reviews() {
     <section className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <span className="section-tag mb-4 inline-block">Testimonios</span>
+          <span className="section-tag mb-4 inline-block">{MARKETING_REVIEWS.sectionTag}</span>
           <h2 className="text-3xl font-display font-bold text-fy-text mt-3">
-            Lo que dicen nuestros usuarios
+            {MARKETING_REVIEWS.title}
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { name: "Laura P.", role: "Cliente", text: "Mudé mi depto por la mitad de lo que me cotizaron afuera. El fletero llegó puntual y con la app pude seguir todo.", rating: 5 },
-            { name: "Carlos M.", role: "Fletero", text: "Postulo a lo que me queda de camino después de cada entrega. Encadenar dos o tres por día cambió mis números.", rating: 5 },
-            { name: "Martín R.", role: "Cliente", text: "Publiqué el flete de materiales, vi el estado de asignación y cuando tocó ya tenía conductor con precio cerrado y tracking.", rating: 5 },
-          ].map((r) => (
+          {MARKETING_REVIEWS.items.map((r) => (
             <div key={r.name} className="card hover:shadow-md transition-shadow">
               <div className="text-brand-amber text-sm mb-3">
                 {"★".repeat(r.rating)}
@@ -243,32 +200,25 @@ function Pricing() {
   return (
     <section id="precios" className="py-16 sm:py-20 px-4 sm:px-6 bg-fy-bg-warm/40">
       <div className="max-w-3xl mx-auto text-center">
-        <span className="section-tag mb-4 inline-block">Precios</span>
+        <span className="section-tag mb-4 inline-block">{MARKETING_PRICING.sectionTag}</span>
         <h2 className="text-3xl font-display font-bold text-fy-text mt-3 mb-4">
-          Transparente y simple
+          {MARKETING_PRICING.title}
         </h2>
         <p className="text-fy-soft mb-12 max-w-lg mx-auto">
-          Sin suscripción para publicar ni para postular. La comisión financia la plataforma, el matching y los pagos; el precio del viaje lo ves cerrado antes de pagar.
+          {MARKETING_PRICING.intro}
         </p>
         <div className="card max-w-md mx-auto text-left !p-6 border-brand-teal-light/30">
           <div className="text-sm text-brand-teal-light font-bold font-heading tracking-wide uppercase mb-2">
-            Comisión por viaje
+            {MARKETING_PRICING.cardTitle}
           </div>
           <div className="text-5xl font-display font-extrabold text-brand-amber mb-2">
-            22%
+            {MARKETING_PRICING.cardRate}
           </div>
           <div className="text-fy-soft text-sm mb-6">
-            sobre el valor acordado del flete. Cubre uso de la app, asignación, tracking y procesamiento de pagos (MercadoPago).
+            {MARKETING_PRICING.cardDescription}
           </div>
           <div className="space-y-3">
-            {[
-              "Publicación y “esperando asignación” sin costo extra",
-              "Asignación por cercanía + reputación (reglas evolutivas)",
-              "Descuentos por retorno y por varios tramos en un mismo pedido",
-              "Pagos con split marketplace (comisión descontada del flujo)",
-              "Seguimiento del envío desde la app",
-              "AMBA: foco inicial, expansión futura",
-            ].map((f) => (
+            {MARKETING_PRICING.bullets.map((f) => (
               <div key={f} className="flex items-center gap-3 text-sm">
                 <span className="text-brand-teal-light">✓</span>
                 <span className="text-fy-soft">{f}</span>
@@ -281,10 +231,38 @@ function Pricing() {
   );
 }
 
+function Faq() {
+  return (
+    <section className="py-16 sm:py-20 px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="section-tag mb-4 inline-block">{MARKETING_FAQ.sectionTag}</span>
+          <h2 className="text-3xl font-display font-bold text-fy-text mt-3">
+            {MARKETING_FAQ.title}
+          </h2>
+        </div>
+        <div className="space-y-4">
+          {MARKETING_FAQ.items.map((item) => (
+            <article key={item.question} className="card !p-5">
+              <h3 className="text-base font-heading font-bold text-fy-text mb-2">
+                {item.question}
+              </h3>
+              <p className="text-sm text-fy-soft leading-relaxed">{item.answer}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Footer() {
   return (
     <footer className="py-10 sm:py-12 px-4 sm:px-6 border-t border-fy-border bg-brand-ink text-white pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div className="max-w-6xl mx-auto min-w-0">
+        <p className="mb-6 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/60">
+          {INSTITUTIONAL_WEB_RESUME.scope}: {INSTITUTIONAL_WEB_RESUME.objective}
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10 sm:mb-12">
           <div>
             <div className="flex items-center gap-1 mb-3">
@@ -298,28 +276,59 @@ function Footer() {
           <div>
             <h4 className="font-heading font-bold text-sm mb-3 text-brand-teal-light">Producto</h4>
             <div className="space-y-2 text-sm text-white/50">
-              <Link href="/#como-funciona" className="block hover:text-brand-teal-light transition-colors">
-                Cómo funciona
-              </Link>
-              <Link href="/#precios" className="block hover:text-brand-teal-light transition-colors">
-                Precios
-              </Link>
-              <Link href="/#fleteros" className="block hover:text-brand-teal-light transition-colors">
-                Para fleteros
-              </Link>
-              <div className="text-white/40">App móvil (próximamente paridad total)</div>
+              {FOOTER_PRODUCT_LINKS.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="block hover:text-brand-teal-light transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div>
-            <h4 className="font-heading font-bold text-sm mb-3 text-brand-teal-light">Empresa</h4>
+            <h4 className="font-heading font-bold text-sm mb-2 text-brand-teal-light">
+              {FOOTER_SECTIONS.company.title}
+            </h4>
+            <p className="text-white/40 text-xs mb-3 leading-relaxed">
+              {FOOTER_SECTIONS.company.description}
+            </p>
             <div className="space-y-2 text-sm text-white/50">
-              <div>Sobre nosotros</div><div>Blog</div><div>Contacto</div><div>Trabaja con nosotros</div>
+              {FOOTER_COMPANY_LINKS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block hover:text-brand-teal-light transition-colors"
+                >
+                  <span className="block">{item.label}</span>
+                  <span className="block text-[11px] text-white/35 leading-relaxed">
+                    {item.description}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
           <div>
-            <h4 className="font-heading font-bold text-sm mb-3 text-brand-teal-light">Legal</h4>
+            <h4 className="font-heading font-bold text-sm mb-2 text-brand-teal-light">
+              {FOOTER_SECTIONS.legal.title}
+            </h4>
+            <p className="text-white/40 text-xs mb-3 leading-relaxed">
+              {FOOTER_SECTIONS.legal.description}
+            </p>
             <div className="space-y-2 text-sm text-white/50">
-              <div>Términos y condiciones</div><div>Política de privacidad</div><div>Política de cookies</div>
+              {FOOTER_LEGAL_LINKS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block hover:text-brand-teal-light transition-colors"
+                >
+                  <span className="block">{item.label}</span>
+                  <span className="block text-[11px] text-white/35 leading-relaxed">
+                    {item.description}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -327,8 +336,22 @@ function Footer() {
           <div className="text-white/40 text-sm">
             © {new Date().getFullYear()} FleteYa SAS. Todos los derechos reservados.
           </div>
-          <div className="flex gap-6 text-white/40 text-sm">
-            <span>Instagram</span><span>LinkedIn</span><span>Twitter</span>
+          <div className="flex flex-wrap justify-center gap-4 text-white/40 text-sm">
+            <span className="w-full text-center text-xs text-white/35">
+              {FOOTER_SECTIONS.social.title}: {FOOTER_SECTIONS.social.description}
+            </span>
+            {FOOTER_SOCIAL_LINKS.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-brand-teal-light transition-colors"
+                title={item.description}
+              >
+                {item.label}
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -337,8 +360,73 @@ function Footer() {
 }
 
 export default function LandingPage() {
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://fletaya.com.ar/#organization",
+        name: "FleteYa",
+        url: "https://fletaya.com.ar",
+        sameAs: FOOTER_SOCIAL_LINKS.map((item) => item.href),
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://fletaya.com.ar/#website",
+        url: "https://fletaya.com.ar",
+        name: "FleteYa",
+        inLanguage: "es-AR",
+      },
+      {
+        "@type": "Service",
+        "@id": "https://fletaya.com.ar/#service",
+        serviceType: "Marketplace de fletes",
+        areaServed: "AMBA",
+        provider: {
+          "@id": "https://fletaya.com.ar/#organization",
+        },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://fletaya.com.ar/#faq",
+        mainEntity: MARKETING_FAQ.items.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.answer,
+          },
+        })),
+      },
+    ],
+  };
+
   return (
     <main className="min-w-0 overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+      />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(() => {
+  if (typeof window === "undefined") return;
+  const onClick = (ev) => {
+    const target = ev.target instanceof Element ? ev.target.closest("[data-marketing-event]") : null;
+    if (!target) return;
+    const eventName = target.getAttribute("data-marketing-event");
+    if (!eventName) return;
+    const href = target.getAttribute("href") || "";
+    const payload = { event: "marketing_click", marketing_event: eventName, href };
+    if (Array.isArray(window.dataLayer)) {
+      window.dataLayer.push(payload);
+    }
+    window.dispatchEvent(new CustomEvent("fletaya:marketing_click", { detail: payload }));
+  };
+  window.addEventListener("click", onClick, { passive: true });
+})();`,
+        }}
+      />
       <MarketingNavbar />
       <Hero />
       <Stats />
@@ -346,6 +434,7 @@ export default function LandingPage() {
       <ForDrivers />
       <Reviews />
       <Pricing />
+      <Faq />
       <Footer />
     </main>
   );

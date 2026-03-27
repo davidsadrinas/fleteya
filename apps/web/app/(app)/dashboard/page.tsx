@@ -1,10 +1,58 @@
+/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import Link from "next/link";
+import { useMemo } from "react";
+import { useSession, useSupabaseQuery } from "@/lib/hooks";
+
+type ProfileRow = { id: string; name: string | null };
+type ShipmentRow = {
+  id: string;
+  status: string;
+  type: string | null;
+  final_price: number | null;
+  is_backhaul: boolean | null;
+  created_at: string;
+};
 
 export default function DashboardPage() {
+  const { user } = useSession();
+  const { data: profiles } = useSupabaseQuery<ProfileRow>(
+    "profiles",
+    user?.id ? { column: "id", value: user.id } : undefined,
+    Boolean(user?.id)
+  );
+  const { data: shipments } = useSupabaseQuery<ShipmentRow>(
+    "shipments",
+    user?.id ? { column: "client_id", value: user.id } : undefined,
+    Boolean(user?.id)
+  );
+
+  const profileName = profiles?.[0]?.name?.trim() || user?.email?.split("@")[0] || "Hola";
+  const activeShipment = (shipments ?? []).find(
+    (s) => s.status !== "delivered" && s.status !== "cancelled"
+  );
+  const backhaulTrips = useMemo(
+    () =>
+      (shipments ?? [])
+        .filter((s) => s.is_backhaul)
+        .slice(0, 3)
+        .map((s) => ({
+          id: s.id,
+          from: "Origen",
+          to: "Destino",
+          price: Number(s.final_price ?? 0).toLocaleString("es-AR"),
+          time: new Date(s.created_at).toLocaleString("es-AR"),
+          space: "50",
+          note: "En vivo",
+        })),
+    [shipments]
+  );
+
   return (
     <div className="px-4 sm:px-5 py-5 pb-8 max-w-full min-w-0">
       <div className="mb-6">
-        <h2 className="text-xl font-display font-bold mb-1">Hola 👋</h2>
+        <h2 className="text-xl font-display font-bold mb-1">Hola, {profileName} 👋</h2>
         <p className="text-fy-soft text-sm leading-relaxed">
           Desde acá publicás cargas, ves el estado de asignación y entrás al seguimiento cuando tu flete esté en curso.
         </p>
@@ -72,7 +120,9 @@ export default function DashboardPage() {
         <div className="flex-1 text-left">
           <div className="text-sm font-semibold text-fy-text">Tracking en vivo</div>
           <div className="text-xs text-fy-dim mt-0.5 leading-relaxed">
-            Cuando tengas un viaje activo vas a ver mapa, estados y datos del fletero acá. Ejemplo: Palermo → Avellaneda.
+            {activeShipment
+              ? `Viaje activo: ${activeShipment.type ?? "envío"} · estado ${activeShipment.status}`
+              : "Todavía no tenés viajes activos."}
           </div>
         </div>
         <span className="text-brand-teal-light">→</span>
@@ -89,25 +139,29 @@ export default function DashboardPage() {
         Fletes donde el conductor aprovecha espacio en la vuelta u ofertas encadenadas: suele traducirse en menos costo para vos y más carga útil para el fletero.
       </p>
 
-      {[
-        {
-          from: "Palermo",
-          to: "Avellaneda",
-          price: "8.500",
-          time: "Hoy 16:00",
-          space: "70",
-          note: "Ejemplo",
-        },
-        {
-          from: "Belgrano",
-          to: "Quilmes",
-          price: "15.200",
-          time: "Hoy 18:30",
-          space: "45",
-          note: "Ejemplo",
-        },
-      ].map((trip, i) => (
-        <div key={i} className="card mb-2 !p-3.5 opacity-90">
+      {(backhaulTrips.length
+        ? backhaulTrips
+        : [
+            {
+              id: "demo-1",
+              from: "Palermo",
+              to: "Avellaneda",
+              price: "8.500",
+              time: "Hoy 16:00",
+              space: "70",
+              note: "Ejemplo",
+            },
+            {
+              id: "demo-2",
+              from: "Belgrano",
+              to: "Quilmes",
+              price: "15.200",
+              time: "Hoy 18:30",
+              space: "45",
+              note: "Ejemplo",
+            },
+          ]).map((trip) => (
+        <div key={trip.id} className="card mb-2 !p-3.5 opacity-90">
           <div className="flex justify-between items-start mb-2">
             <div>
               <div className="flex items-center gap-1.5 text-sm">
