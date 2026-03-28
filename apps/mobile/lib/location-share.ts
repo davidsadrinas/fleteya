@@ -10,16 +10,19 @@ export async function startDriverLocationShare(shipmentId: string): Promise<Loca
   return Location.watchPositionAsync(
     {
       accuracy: Location.Accuracy.Balanced,
-      timeInterval: 6000,
+      timeInterval: 5000,
       distanceInterval: 10,
     },
     async (position) => {
-      await supabase.from("tracking_points").insert({
+      const { error } = await supabase.from("tracking_points").insert({
         shipment_id: shipmentId,
         location: `POINT(${position.coords.longitude} ${position.coords.latitude})`,
         speed: position.coords.speed,
         heading: position.coords.heading,
       });
+      if (error) {
+        console.warn("No se pudo insertar tracking point", error.message);
+      }
     }
   );
 }

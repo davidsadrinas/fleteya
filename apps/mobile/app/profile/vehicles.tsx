@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { router } from "expo-router";
 import { VEHICLE_TYPES, type VehicleType } from "@shared/types";
 import { supabase } from "@/lib/supabase";
 
@@ -52,6 +53,7 @@ export default function VehiclesScreen() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user.id;
     if (!userId) {
+      router.replace("/auth/login");
       setLoading(false);
       return;
     }

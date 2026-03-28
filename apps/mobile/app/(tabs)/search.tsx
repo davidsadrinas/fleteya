@@ -11,17 +11,9 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import type { ShipmentType } from "@shared/types";
+import { SHIPMENT_TYPES } from "@shared/constants";
 
-const SHIPMENT_TYPES: ShipmentType[] = [
-  "mudanza",
-  "mercaderia",
-  "materiales",
-  "electrodomesticos",
-  "muebles",
-  "acarreo_vehiculo",
-  "limpieza_atmosferico",
-  "residuos",
-];
+const SHIPMENT_TYPE_IDS: ShipmentType[] = SHIPMENT_TYPES.map((item) => item.id);
 
 export default function SearchScreen() {
   const [type, setType] = useState<ShipmentType>("mudanza");
@@ -52,7 +44,7 @@ export default function SearchScreen() {
 
         <Text style={styles.label}>Tipo de envio</Text>
         <View style={styles.chipsWrap}>
-          {SHIPMENT_TYPES.map((item) => (
+          {SHIPMENT_TYPE_IDS.map((item) => (
             <Pressable
               key={item}
               onPress={() => setType(item)}

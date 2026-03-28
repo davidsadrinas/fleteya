@@ -50,7 +50,10 @@ export default function ShipmentWizardScreen() {
     helpers?: string;
     description?: string;
   }>();
-  const googleApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const googleApiKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ??
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ??
+    "";
 
   const [type] = useState<ShipmentType>(asShipmentType(params.type));
   const [helpers, setHelpers] = useState(params.helpers ?? "0");

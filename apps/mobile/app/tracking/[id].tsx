@@ -36,7 +36,9 @@ export default function TrackingScreen() {
   const [points, setPoints] = useState<TrackingPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [canShare, setCanShare] = useState(false);
   const sharingRef = useRef<LocationSubscription | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (!shipmentId) return;
@@ -44,10 +46,22 @@ export default function TrackingScreen() {
     const bootstrap = async () => {
       const { data: shipment } = await supabase
         .from("shipments")
-        .select("status")
+        .select("status,driver_id")
         .eq("id", shipmentId)
         .maybeSingle();
       if (shipment?.status) setStatus(shipment.status as ShipmentStatus);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id ?? null;
+      if (shipment?.driver_id && userId) {
+        const { data: driverRow } = await supabase
+          .from("drivers")
+          .select("user_id")
+          .eq("id", shipment.driver_id)
+          .maybeSingle();
+        setCanShare((driverRow as { user_id?: string | null } | null)?.user_id === userId);
+      } else {
+        setCanShare(false);
+      }
 
       const { data: trackingRows } = await supabase
         .from("tracking_points")
@@ -161,9 +175,9 @@ export default function TrackingScreen() {
           El mapa se actualiza automaticamente con Supabase Realtime.
         </Text>
         <Pressable
-          style={[styles.shareButton, sharing ? styles.shareButtonActive : undefined]}
+          style={[styles.shareButton, sharing ? styles.shareButtonActive : undefined, !canShare ? styles.shareDisabled : undefined]}
           onPress={() => {
-            if (!shipmentId) return;
+            if (!shipmentId || !canShare) return;
             if (sharing) {
               sharingRef.current?.remove();
               sharingRef.current = null;
@@ -181,9 +195,47 @@ export default function TrackingScreen() {
           }}
         >
           <Text style={styles.shareButtonText}>
-            {sharing ? "Compartiendo GPS del fletero" : "Iniciar compartir GPS"}
+            {!canShare
+              ? "GPS compartido por fletero asignado"
+              : sharing
+              ? "Compartiendo GPS del fletero"
+              : "Iniciar compartir GPS"}
           </Text>
         </Pressable>
+        {sharing ? (
+          <Text style={styles.liveIndicator}>📍 Compartiendo ubicación</Text>
+        ) : null}
+        {canShare ? (
+          <View style={styles.statusGrid}>
+            {[
+              { label: "Llegué al origen", value: "at_origin" },
+              { label: "Cargando", value: "loading" },
+              { label: "En tránsito", value: "in_transit" },
+              { label: "Llegando", value: "arriving" },
+              { label: "Entregado", value: "delivered" },
+            ].map((next) => (
+              <Pressable
+                key={next.value}
+                disabled={updatingStatus}
+                style={styles.statusChip}
+                onPress={() => {
+                  if (!shipmentId) return;
+                  setUpdatingStatus(true);
+                  void supabase
+                    .from("shipments")
+                    .update({ status: next.value, updated_at: new Date().toISOString() })
+                    .eq("id", shipmentId)
+                    .then(({ error }) => {
+                      if (!error) setStatus(next.value as ShipmentStatus);
+                    })
+                    .finally(() => setUpdatingStatus(false));
+                }}
+              >
+                <Text style={styles.statusChipText}>{next.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -211,5 +263,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFB",
   },
   shareButtonActive: { borderColor: "#40916C", backgroundColor: "#E8F5EC" },
+  shareDisabled: { opacity: 0.6 },
   shareButtonText: { color: "#1B4332", fontSize: 12, fontWeight: "700" },
+  liveIndicator: {
+    marginTop: 8,
+    color: "#40916C",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  statusGrid: {
+    marginTop: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  statusChip: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DFE6E9",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    backgroundColor: "#F8FAFB",
+  },
+  statusChipText: {
+    color: "#2D3436",
+    fontSize: 11,
+    fontWeight: "600",
+  },
 });
