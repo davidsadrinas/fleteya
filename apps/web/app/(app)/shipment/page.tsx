@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useShipmentWizard } from "@/lib/stores";
 import { createShipmentSchema } from "@/lib/schemas";
+import { apiFetch } from "@/lib/api-fetch";
 
 type WizardStep = 0 | 1 | 2 | 3;
 
@@ -84,7 +85,7 @@ export default function ShipmentPage() {
 
     try {
       setSaving(true);
-      const res = await fetch("/api/shipments", {
+      const res = await apiFetch("/api/shipments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed.data),

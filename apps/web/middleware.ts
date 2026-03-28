@@ -6,8 +6,24 @@ import {
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  const { response, user } = await updateSession(request);
+  // CSRF protection: state-changing API requests from browsers must include X-Requested-With header.
+  // This header cannot be sent cross-origin without CORS preflight, preventing CSRF attacks.
+  const method = request.method;
   const { pathname } = request.nextUrl;
+  if (
+    pathname.startsWith("/api/") &&
+    !pathname.startsWith("/api/payments/webhook") && // webhooks are externally authenticated
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+  ) {
+    const xRequestedWith = request.headers.get("x-requested-with");
+    const authHeader = request.headers.get("authorization");
+    // Allow if: custom header present, or Bearer token (internal/mobile API calls)
+    if (!xRequestedWith && !authHeader) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const { response, user } = await updateSession(request);
 
   if (pathname.startsWith("/login") && user) {
     const next = request.nextUrl.searchParams.get("next");

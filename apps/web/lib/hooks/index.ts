@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-client";
 import { useTrackingStore } from "@/lib/stores";
+import { apiFetch } from "@/lib/api-fetch";
 
 const supabase = createClient();
 
@@ -164,4 +165,86 @@ export function useShareLocation(shipmentId: string | null) {
   useEffect(() => stop, [stop]);
 
   return { sharing, start, stop };
+}
+
+// Web push notification subscription
+export function usePushNotifications() {
+  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setPermission(Notification.permission);
+    }
+  }, []);
+
+  const subscribe = useCallback(async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    setLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      await navigator.serviceWorker.ready;
+
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      if (result !== "granted") {
+        setLoading(false);
+        return;
+      }
+
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        console.warn("VAPID public key not configured");
+        setLoading(false);
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: vapidKey,
+      });
+
+      const subJson = subscription.toJSON();
+      await apiFetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpoint: subJson.endpoint,
+          p256dh: subJson.keys?.p256dh,
+          auth: subJson.keys?.auth,
+        }),
+      });
+
+      setSubscribed(true);
+    } catch (err) {
+      console.error("Push subscription error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const unsubscribe = useCallback(async () => {
+    if (!("serviceWorker" in navigator)) return;
+    setLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await apiFetch("/api/push/subscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        });
+        await subscription.unsubscribe();
+      }
+      setSubscribed(false);
+    } catch (err) {
+      console.error("Push unsubscribe error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { permission, subscribed, loading, subscribe, unsubscribe };
 }

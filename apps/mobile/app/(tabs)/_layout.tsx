@@ -58,6 +58,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Config",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>⚙</Text>
+          ),
+        }}
+      />
     </Tabs>
   );
 }

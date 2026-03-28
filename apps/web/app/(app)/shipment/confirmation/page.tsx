@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createEvent } from "ics";
 import { createClient } from "@/lib/supabase-client";
+import { apiFetch } from "@/lib/api-fetch";
 
 type ShipmentSummary = {
   originAddress: string | null;
@@ -46,6 +47,9 @@ function ShipmentConfirmationContent() {
   const shipmentId = searchParams.get("shipmentId") ?? "N/A";
   const priceFromUrl = Number(searchParams.get("price") ?? "0");
   const reservation = useMemo(() => shipmentId.slice(0, 8).toUpperCase(), [shipmentId]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [summary, setSummary] = useState<ShipmentSummary>({
     originAddress: null,
     destAddress: null,
@@ -160,6 +164,32 @@ function ShipmentConfirmationContent() {
     URL.revokeObjectURL(url);
   };
 
+  const handlePayment = async () => {
+    if (shipmentId === "N/A" || paymentUrl) return;
+    setPaymentLoading(true);
+    setPaymentError(null);
+    try {
+      const res = await apiFetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shipment_id: shipmentId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setPaymentError(json.error ?? "Error al crear el pago");
+        return;
+      }
+      if (json.init_point) {
+        setPaymentUrl(json.init_point);
+        window.open(json.init_point, "_blank");
+      }
+    } catch {
+      setPaymentError("Error de conexión. Intentá de nuevo.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
   return (
     <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0">
       <div className="rounded-2xl border border-brand-teal/30 bg-brand-teal/10 p-5 text-center mb-4">
@@ -247,6 +277,41 @@ function ShipmentConfirmationContent() {
         <pre className="text-[10px] overflow-auto rounded-md border border-fy-border p-2 text-fy-dim bg-fy-bg">
           {ics.slice(0, 600)}
         </pre>
+      </section>
+
+      <section className="rounded-xl border border-fy-border bg-brand-card/30 p-4 mb-4">
+        <h2 className="text-xs font-heading font-bold text-brand-coral uppercase tracking-wide mb-2">
+          Pago
+        </h2>
+        {paymentUrl ? (
+          <div className="text-center">
+            <p className="text-sm text-fy-soft mb-2">Pago iniciado con MercadoPago</p>
+            <a
+              href={paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded-xl bg-[#009EE3] text-white py-2.5 px-6 text-sm font-bold"
+            >
+              Ir a MercadoPago
+            </a>
+          </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-sm text-fy-soft mb-3">
+              Pagá de forma segura con MercadoPago. El monto se retiene hasta la entrega.
+            </p>
+            <button
+              onClick={handlePayment}
+              disabled={paymentLoading || shipmentId === "N/A"}
+              className="w-full rounded-xl bg-[#009EE3] text-white py-3 text-sm font-bold disabled:opacity-50"
+            >
+              {paymentLoading ? "Creando pago..." : `Pagar $${summary.finalPrice.toLocaleString("es-AR")}`}
+            </button>
+            {paymentError && (
+              <p className="text-xs text-red-400 mt-2">{paymentError}</p>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="flex gap-3">

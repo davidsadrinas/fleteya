@@ -1,167 +1,219 @@
 # FleteYa
 
-Marketplace de fletes con optimización de retornos (backhaul) para AMBA, Argentina.
+Marketplace de fletes con optimizacion de retornos (backhaul) para AMBA, Argentina.
 
 ## Arquitectura
 
 ```
-fletaya-project/
+fletaya/
 ├── apps/
-│   ├── web/          → Next.js 14 (App Router) - Web pública + App web
+│   ├── web/          → Next.js 14 (App Router) - Web publica + App + API
 │   └── mobile/       → React Native + Expo - App iOS/Android
 ├── packages/
-│   ├── shared/       → Tipos, utilidades y constantes compartidas
-│   └── supabase/     → Migraciones, seeds y edge functions
-└── docs/             → Documentación del proyecto
+│   ├── shared/       → Tipos, utilidades, constantes y logica de asignacion
+│   └── supabase/     → Migraciones SQL, seeds y scripts de BD
 ```
 
-## Stack Tecnológico
+## Stack Tecnologico
 
-| Capa | Tecnología | Propósito |
+| Capa | Tecnologia | Proposito |
 |------|-----------|-----------|
 | Web | Next.js 14 (App Router) | Landing + App web |
-| Mobile | React Native + Expo | App iOS/Android |
-| Auth | Supabase Auth + NextAuth | Google, Facebook, Instagram, Email |
-| Base de datos | Supabase (PostgreSQL + PostGIS) | Datos + geolocalización |
-| Storage | Supabase Storage | Fotos DNI, vehículos |
-| Pagos | MercadoPago SDK | Split payments marketplace |
-| Maps | Google Maps Platform | Autocomplete, directions, tracking |
-| Hosting | Vercel | Web + API routes |
-| Real-time | Supabase Realtime | GPS tracking en vivo |
-| Push | Expo Notifications + FCM | Notificaciones |
+| Mobile | React Native + Expo 52 | App iOS/Android |
+| Auth | Supabase Auth | Google, Facebook, Email magic link |
+| Base de datos | Supabase (PostgreSQL + PostGIS) | Datos + geolocalizacion |
+| Storage | Supabase Storage | Fotos DNI, vehiculos, evidencia |
+| Pagos | MercadoPago | Cobro y split payments |
+| Mapas | Google Maps Platform | Autocomplete, direcciones, tracking |
+| Real-time | Supabase Realtime | GPS tracking, chat, disputas |
+| Push | Web Push (VAPID) + Expo Notifications | Notificaciones |
+| Rate Limiting | Upstash Redis (prod) / in-memory (dev) | Proteccion anti-abuso |
+| Hosting | Vercel (web) + Expo EAS (mobile) | Deploy |
+| Tests | Vitest | Unit + integration tests |
 
-## Inicio Rápido
+## Requisitos Previos
 
-### Requisitos
-- Node.js 20+
-- pnpm 8+
-- Cuenta de Supabase (gratis)
-- Cuenta de Vercel (gratis)
-- Expo CLI (`npm install -g expo-cli`)
+- **Node.js** >= 20.0.0
+- **pnpm** >= 8.0.0 (`npm install -g pnpm`)
+- **Cuenta Supabase** (gratis) — https://supabase.com
+- **Expo CLI** (`npm install -g expo-cli`) — solo si vas a correr la app mobile
 
-### Setup
+## Setup Completo desde Cero
+
+### 1. Clonar e instalar dependencias
 
 ```bash
-# 1. Clonar e instalar
 git clone <repo-url>
-cd fletaya-project
+cd fletaya
 pnpm install
-
-# 2. Configurar variables de entorno
-cp apps/web/.env.example apps/web/.env.local
-cp apps/mobile/.env.example apps/mobile/.env
-
-# 3. Configurar Supabase
-# Crear proyecto en https://supabase.com
-# Copiar URL y anon key al .env.local
-
-# 4. Correr migraciones
-pnpm db:migrate
-
-# 5. Desarrollo
-pnpm dev:web      # → http://localhost:3000
-pnpm dev:mobile   # → Expo Go en el celular
 ```
 
-### Deploy
+### 2. Configurar Supabase
+
+1. Crear un proyecto nuevo en https://supabase.com
+2. Ir a **Settings → API** y copiar:
+   - Project URL (`NEXT_PUBLIC_SUPABASE_URL`)
+   - Anon/public key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+   - Service role key (`SUPABASE_SERVICE_ROLE_KEY`)
+
+3. En el dashboard de Supabase, activar extensiones:
+   - **PostGIS** (Database → Extensions → buscar "postgis" → Enable)
+   - **uuid-ossp** (suele estar habilitado por defecto)
+
+4. Activar providers de Auth (Authentication → Providers):
+   - **Email** (magic link, ya viene activado)
+   - **Google** (necesitas Client ID/Secret de Google Cloud Console)
+   - **Facebook** (opcional, necesitas App ID/Secret de Facebook Developers)
+
+### 3. Configurar variables de entorno
 
 ```bash
-# Web → Vercel
-vercel
+# Copiar el archivo de ejemplo
+cp apps/web/.env.example apps/web/.env.local
+```
 
-# Mobile → Expo
-eas build --platform all
-eas submit --platform all
+Editar `apps/web/.env.local` con los valores de tu proyecto Supabase:
+
+```env
+# Obligatorio
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Pagos (para que funcione MercadoPago)
+MERCADOPAGO_ACCESS_TOKEN=TEST-...
+MERCADOPAGO_PUBLIC_KEY=TEST-...
+NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=TEST-...
+MERCADOPAGO_WEBHOOK_SECRET=...
+
+# Push notifications (generar con: npx web-push generate-vapid-keys)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+
+# Opcional
+NEXT_PUBLIC_GOOGLE_MAPS_KEY=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+Para la app mobile, crear `apps/mobile/.env`:
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+EXPO_PUBLIC_GOOGLE_MAPS_KEY=...
+EXPO_PUBLIC_API_URL=http://localhost:3000/api
+```
+
+### 4. Correr migraciones de base de datos
+
+```bash
+pnpm db:migrate
+```
+
+Esto ejecuta las 10 migraciones SQL que crean todas las tablas, funciones RPC, politicas RLS, buckets de storage, etc.
+
+Opcionalmente, cargar datos de prueba:
+```bash
+pnpm db:seed
+```
+
+### 5. Iniciar desarrollo
+
+```bash
+# Web (Next.js) — http://localhost:3000
+pnpm dev:web
+
+# Mobile (Expo) — abrir en Expo Go
+pnpm dev:mobile
+```
+
+### 6. Correr tests
+
+```bash
+# Todos los tests del monorepo
+pnpm test
+
+# Solo un workspace
+pnpm test:web      # 29 test files, 151+ tests
+pnpm test:shared   # 5 test files, 54+ tests
+pnpm test:mobile   # Tests de la app mobile
+
+# Con watch mode
+cd apps/web && pnpm test:watch
+
+# Con coverage
+pnpm test:coverage
 ```
 
 ## Estructura de la Web (Next.js)
 
 ```
 apps/web/app/
-├── (marketing)/          → Rutas públicas (landing, sobre nosotros, etc.)
-│   ├── page.tsx          → Landing page principal
-│   ├── como-funciona/    → Explicación del servicio
+├── (marketing)/          → Rutas publicas
+│   ├── page.tsx          → Landing page
+│   ├── como-funciona/    → Explicacion del servicio
+│   ├── cotizar/          → Cotizador instantaneo (sin login)
 │   ├── fleteros/         → Landing para fleteros
-│   ├── precios/          → Pricing y comisiones
-│   └── layout.tsx        → Layout con navbar y footer
-├── (app)/                → Rutas autenticadas (la app)
-│   ├── dashboard/        → Home del usuario logueado
-│   ├── shipment/         → Wizard de nuevo envío
+│   └── legal/[slug]/     → Paginas legales
+├── (app)/                → Rutas autenticadas
+│   ├── dashboard/        → Home del usuario
+│   ├── shipment/         → Wizard de nuevo envio + confirmacion
 │   ├── tracking/         → Tracking GPS en vivo
-│   ├── profile/          → Perfil, docs, vehículos
-│   ├── settings/         → Configuración de cuenta
-│   └── layout.tsx        → Layout con bottom nav
-├── api/                  → API Routes (backend)
-│   ├── auth/             → NextAuth endpoints
-│   ├── shipments/        → CRUD de envíos
-│   ├── drivers/          → Gestión de fleteros
-│   ├── tracking/         → WebSocket tracking
-│   └── webhooks/         → MercadoPago webhooks
-└── layout.tsx            → Root layout
+│   ├── profile/          → Perfil, documentos, vehiculos
+│   ├── settings/         → Config, push, referidos
+│   └── admin/            → Panel admin (stats, fleteros, disputas)
+├── api/                  → API Routes
+│   ├── shipments/        → CRUD envios + asignacion + chat + disputas
+│   ├── drivers/          → Gestion fleteros
+│   ├── payments/         → Crear preferencia MP + webhook
+│   ├── quote/            → Cotizacion instantanea
+│   ├── referrals/        → Codigos de referido
+│   ├── push/             → Subscripcion + envio de push
+│   ├── admin/            → Stats, verificacion, disputas
+│   ├── documents/        → URLs firmadas para storage
+│   └── tracking/         → GPS tracking
 ```
 
-## Variables de Entorno
+## Deploy
 
-### Web (`apps/web/.env.local`)
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+### Web (Vercel)
 
-# Auth
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-FACEBOOK_CLIENT_ID=
-FACEBOOK_CLIENT_SECRET=
+```bash
+# Instalar Vercel CLI
+npm install -g vercel
 
-# Google Maps
-NEXT_PUBLIC_GOOGLE_MAPS_KEY=
+# Deploy
+vercel
 
-# MercadoPago
-MERCADOPAGO_ACCESS_TOKEN=
-MERCADOPAGO_PUBLIC_KEY=
-NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY=
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+# Configurar variables de entorno en Vercel Dashboard
+# IMPORTANTE: NEXT_PUBLIC_APP_URL debe apuntar a tu dominio, NO a localhost
 ```
 
-### Mobile (`apps/mobile/.env`)
-```env
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-EXPO_PUBLIC_GOOGLE_MAPS_KEY=
-EXPO_PUBLIC_API_URL=http://localhost:3000/api
+### Mobile (Expo EAS)
+
+```bash
+# Instalar EAS CLI
+npm install -g eas-cli
+
+# Build
+eas build --platform all
+
+# Submit a stores
+eas submit --platform all
 ```
 
-## Base de Datos
+## Documentacion del Proyecto
 
-### Tablas principales
-- `users` → Usuarios (extends Supabase auth)
-- `drivers` → Perfil de fleteros (docs, verificación)
-- `vehicles` → Vehículos de fleteros
-- `shipments` → Envíos/fletes
-- `shipment_legs` → Tramos de cada envío
-- `tracking_points` → Puntos GPS en tiempo real
-- `reviews` → Reseñas de clientes
-- `payments` → Registro de pagos
+Para una explicacion completa de la arquitectura, funcionalidades, modelo de datos, pricing, seguridad y API endpoints, ver **[FLETAYA.md](./FLETAYA.md)**.
 
-### Extensiones PostgreSQL
-- `postgis` → Queries geoespaciales
-- `pg_cron` → Jobs programados
-- `uuid-ossp` → UUIDs
-
-## Licencias y Cuentas Necesarias
+## Licencias y Cuentas
 
 | Servicio | Costo | Nota |
 |----------|-------|------|
 | Supabase | Gratis (Free tier) | Hasta 50K MAU |
-| Vercel | Gratis (Hobby) | Deploy automático |
-| Google Play | USD 25 (único) | Cuenta de desarrollador |
-| Apple App Store | USD 99/año | Developer Program |
-| Google Maps | USD 200/mes crédito gratis | Places, Directions |
-| MercadoPago | % por transacción | Split payments |
-| AWS Activate | Hasta USD 100K créditos | Aplicar como startup |
+| Vercel | Gratis (Hobby) | Deploy automatico |
+| Google Play | USD 25 (unico) | Cuenta de desarrollador |
+| Apple App Store | USD 99/ano | Developer Program |
+| Google Maps | USD 200/mes credito gratis | Places, Directions |
+| MercadoPago | % por transaccion | Split payments |

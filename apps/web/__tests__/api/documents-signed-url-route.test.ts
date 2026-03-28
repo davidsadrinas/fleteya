@@ -32,8 +32,9 @@ describe("API /documents/signed-url", () => {
   });
 
   it("returns signed url for shipment evidence participant", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
     const req = new NextRequest(
-      "http://localhost:3000/api/documents/signed-url?bucket=shipment-evidence&path=s1/file.jpg&shipmentId=s1"
+      `http://localhost:3000/api/documents/signed-url?bucket=shipment-evidence&path=${uuid}/file.jpg&shipmentId=${uuid}`
     );
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -42,8 +43,9 @@ describe("API /documents/signed-url", () => {
   });
 
   it("blocks cross-user dni-documents path", async () => {
+    const otherUuid = "00000000-0000-0000-0000-000000000099";
     const req = new NextRequest(
-      "http://localhost:3000/api/documents/signed-url?bucket=dni-documents&path=other-user/file.jpg"
+      `http://localhost:3000/api/documents/signed-url?bucket=dni-documents&path=${otherUuid}/file.jpg`
     );
     const res = await GET(req);
     expect(res.status).toBe(403);

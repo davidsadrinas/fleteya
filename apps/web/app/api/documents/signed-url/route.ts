@@ -2,8 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { canAccessShipment } from "@/lib/shipments/access";
 
+const SAFE_PATH_REGEX = /^[a-f0-9-]{36}\/[a-zA-Z0-9._-]+$/;
+
 function isValidStoragePath(value: string): boolean {
-  return value.length > 3 && !value.includes("..") && !value.startsWith("/");
+  if (value.length < 3 || value.length > 500) return false;
+  if (value.includes("..") || value.startsWith("/")) return false;
+  // Normalize percent-encoded sequences and re-check
+  try {
+    const decoded = decodeURIComponent(value);
+    if (decoded.includes("..") || decoded.startsWith("/")) return false;
+  } catch {
+    return false;
+  }
+  return SAFE_PATH_REGEX.test(value);
 }
 
 export async function GET(req: NextRequest) {

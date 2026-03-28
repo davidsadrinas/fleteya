@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "@/lib/api-fetch";
 import { createClient } from "@/lib/supabase-client";
 import { useSession, useSupabaseQuery } from "@/lib/hooks";
 import { documentUploadSchema } from "@/lib/schemas";
@@ -129,7 +130,7 @@ export default function ProfilePage() {
       setMessage(upErr.message);
       return;
     }
-    const res = await fetch("/api/drivers", {
+    const res = await apiFetch("/api/drivers", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ field, value: path }),

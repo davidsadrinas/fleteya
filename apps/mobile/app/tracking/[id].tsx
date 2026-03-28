@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,12 +13,22 @@ import MapView, { Marker, Polyline } from "react-native-maps";
 import type { ShipmentStatus } from "@shared/types";
 import { STATUS_META } from "@shared/types";
 import { supabase } from "@/lib/supabase";
-import { startDriverLocationShare } from "@/lib/location-share";
+import { startDriverLocationShare, stopDriverLocationFlush } from "@/lib/location-share";
 import type { LocationSubscription } from "expo-location";
+import ChatPanel from "@/components/chat-panel";
+import EvidencePanel from "@/components/evidence-panel";
+import DisputesPanel from "@/components/disputes-panel";
 
 type TrackingPoint = { lat: number; lng: number };
+type Panel = "map" | "chat" | "evidence" | "disputes";
 
 const WKT_REGEX = /POINT\(([-\d.]+)\s+([-\d.]+)\)/;
+const PANELS: { key: Panel; label: string }[] = [
+  { key: "map", label: "Mapa" },
+  { key: "chat", label: "Chat" },
+  { key: "evidence", label: "Fotos" },
+  { key: "disputes", label: "Disputas" },
+];
 
 function parseTrackingLocation(input: unknown): TrackingPoint | null {
   if (typeof input !== "string") return null;
@@ -39,6 +50,8 @@ export default function TrackingScreen() {
   const [canShare, setCanShare] = useState(false);
   const sharingRef = useRef<LocationSubscription | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [activePanel, setActivePanel] = useState<Panel>("map");
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shipmentId) return;
@@ -51,14 +64,15 @@ export default function TrackingScreen() {
         .maybeSingle();
       if (shipment?.status) setStatus(shipment.status as ShipmentStatus);
       const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id ?? null;
-      if (shipment?.driver_id && userId) {
+      const uid = sessionData.session?.user.id ?? null;
+      setUserId(uid);
+      if (shipment?.driver_id && uid) {
         const { data: driverRow } = await supabase
           .from("drivers")
           .select("user_id")
           .eq("id", shipment.driver_id)
           .maybeSingle();
-        setCanShare((driverRow as { user_id?: string | null } | null)?.user_id === userId);
+        setCanShare((driverRow as { user_id?: string | null } | null)?.user_id === uid);
       } else {
         setCanShare(false);
       }
@@ -121,6 +135,7 @@ export default function TrackingScreen() {
       supabase.removeChannel(shipmentChannel);
       sharingRef.current?.remove();
       sharingRef.current = null;
+      stopDriverLocationFlush();
     };
   }, [shipmentId]);
 
@@ -148,95 +163,127 @@ export default function TrackingScreen() {
         </View>
       </View>
 
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: current?.lat ?? -34.6037,
-          longitude: current?.lng ?? -58.3816,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
-        }}
-      >
-        {points.length > 0 ? (
-          <Polyline
-            coordinates={points.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
-            strokeColor="#40916C"
-            strokeWidth={4}
-          />
-        ) : null}
-        {current ? (
-          <Marker coordinate={{ latitude: current.lat, longitude: current.lng }} title="Fletero" />
-        ) : null}
-      </MapView>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerTitle}>Puntos recibidos: {points.length}</Text>
-        <Text style={styles.footerText}>
-          El mapa se actualiza automaticamente con Supabase Realtime.
-        </Text>
-        <Pressable
-          style={[styles.shareButton, sharing ? styles.shareButtonActive : undefined, !canShare ? styles.shareDisabled : undefined]}
-          onPress={() => {
-            if (!shipmentId || !canShare) return;
-            if (sharing) {
-              sharingRef.current?.remove();
-              sharingRef.current = null;
-              setSharing(false);
-              return;
-            }
-            startDriverLocationShare(shipmentId)
-              .then((subscription) => {
-                if (subscription) {
-                  sharingRef.current = subscription;
-                  setSharing(true);
-                }
-              })
-              .catch(() => setSharing(false));
-          }}
-        >
-          <Text style={styles.shareButtonText}>
-            {!canShare
-              ? "GPS compartido por fletero asignado"
-              : sharing
-              ? "Compartiendo GPS del fletero"
-              : "Iniciar compartir GPS"}
-          </Text>
-        </Pressable>
-        {sharing ? (
-          <Text style={styles.liveIndicator}>📍 Compartiendo ubicación</Text>
-        ) : null}
-        {canShare ? (
-          <View style={styles.statusGrid}>
-            {[
-              { label: "Llegué al origen", value: "at_origin" },
-              { label: "Cargando", value: "loading" },
-              { label: "En tránsito", value: "in_transit" },
-              { label: "Llegando", value: "arriving" },
-              { label: "Entregado", value: "delivered" },
-            ].map((next) => (
-              <Pressable
-                key={next.value}
-                disabled={updatingStatus}
-                style={styles.statusChip}
-                onPress={() => {
-                  if (!shipmentId) return;
-                  setUpdatingStatus(true);
-                  void supabase
-                    .from("shipments")
-                    .update({ status: next.value, updated_at: new Date().toISOString() })
-                    .eq("id", shipmentId)
-                    .then(({ error }) => {
-                      if (!error) setStatus(next.value as ShipmentStatus);
-                    })
-                    .finally(() => setUpdatingStatus(false));
-                }}
-              >
-                <Text style={styles.statusChipText}>{next.label}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+      {/* Segment control */}
+      <View style={styles.segments}>
+        {PANELS.map((p) => (
+          <Pressable
+            key={p.key}
+            style={[styles.segment, activePanel === p.key && styles.segmentActive]}
+            onPress={() => setActivePanel(p.key)}
+          >
+            <Text style={[styles.segmentText, activePanel === p.key && styles.segmentTextActive]}>
+              {p.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
+
+      {activePanel === "map" && (
+        <>
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: current?.lat ?? -34.6037,
+              longitude: current?.lng ?? -58.3816,
+              latitudeDelta: 0.08,
+              longitudeDelta: 0.08,
+            }}
+          >
+            {points.length > 0 ? (
+              <Polyline
+                coordinates={points.map((p) => ({ latitude: p.lat, longitude: p.lng }))}
+                strokeColor="#40916C"
+                strokeWidth={4}
+              />
+            ) : null}
+            {current ? (
+              <Marker coordinate={{ latitude: current.lat, longitude: current.lng }} title="Fletero" />
+            ) : null}
+          </MapView>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerTitle}>Puntos recibidos: {points.length}</Text>
+            <Text style={styles.footerText}>
+              El mapa se actualiza automaticamente con Supabase Realtime.
+            </Text>
+            <Pressable
+              style={[styles.shareButton, sharing ? styles.shareButtonActive : undefined, !canShare ? styles.shareDisabled : undefined]}
+              onPress={() => {
+                if (!shipmentId || !canShare) return;
+                if (sharing) {
+                  sharingRef.current?.remove();
+                  sharingRef.current = null;
+                  setSharing(false);
+                  stopDriverLocationFlush();
+                  return;
+                }
+                startDriverLocationShare(shipmentId)
+                  .then((subscription) => {
+                    if (subscription) {
+                      sharingRef.current = subscription;
+                      setSharing(true);
+                    }
+                  })
+                  .catch(() => setSharing(false));
+              }}
+            >
+              <Text style={styles.shareButtonText}>
+                {!canShare
+                  ? "GPS compartido por fletero asignado"
+                  : sharing
+                  ? "Compartiendo GPS del fletero"
+                  : "Iniciar compartir GPS"}
+              </Text>
+            </Pressable>
+            {sharing ? (
+              <Text style={styles.liveIndicator}>Compartiendo ubicación</Text>
+            ) : null}
+            {canShare ? (
+              <View style={styles.statusGrid}>
+                {[
+                  { label: "Llegué al origen", value: "at_origin" },
+                  { label: "Cargando", value: "loading" },
+                  { label: "En tránsito", value: "in_transit" },
+                  { label: "Llegando", value: "arriving" },
+                  { label: "Entregado", value: "delivered" },
+                ].map((next) => (
+                  <Pressable
+                    key={next.value}
+                    disabled={updatingStatus}
+                    style={styles.statusChip}
+                    onPress={() => {
+                      if (!shipmentId) return;
+                      setUpdatingStatus(true);
+                      void supabase
+                        .from("shipments")
+                        .update({ status: next.value, updated_at: new Date().toISOString() })
+                        .eq("id", shipmentId)
+                        .then(({ error }) => {
+                          if (!error) setStatus(next.value as ShipmentStatus);
+                        })
+                        .finally(() => setUpdatingStatus(false));
+                    }}
+                  >
+                    <Text style={styles.statusChipText}>{next.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </>
+      )}
+
+      {activePanel === "chat" && userId && (
+        <ChatPanel shipmentId={shipmentId} userId={userId} />
+      )}
+
+      {activePanel === "evidence" && userId && (
+        <EvidencePanel shipmentId={shipmentId} userId={userId} />
+      )}
+
+      {activePanel === "disputes" && userId && (
+        <DisputesPanel shipmentId={shipmentId} userId={userId} />
+      )}
     </SafeAreaView>
   );
 }
@@ -248,6 +295,11 @@ const styles = StyleSheet.create({
   title: { color: "#1B4332", fontWeight: "800", fontSize: 22, marginBottom: 6 },
   badge: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   badgeText: { fontSize: 12, fontWeight: "700" },
+  segments: { flexDirection: "row", paddingHorizontal: 12, paddingVertical: 6, gap: 6 },
+  segment: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8, backgroundColor: "#F0F0F0" },
+  segmentActive: { backgroundColor: "#1B4332" },
+  segmentText: { fontSize: 12, fontWeight: "600", color: "#7B8794" },
+  segmentTextActive: { color: "#fff" },
   map: { flex: 1, marginTop: 6 },
   footer: { padding: 14, borderTopWidth: 1, borderTopColor: "#DFE6E9", backgroundColor: "#FFFFFF" },
   footerTitle: { color: "#2D3436", fontWeight: "700", marginBottom: 3 },

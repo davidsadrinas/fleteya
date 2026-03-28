@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { RATE_LIMIT_MAX_ENTRIES, RATE_LIMIT_CLEANUP_INTERVAL_MS } from "@shared/constants";
 
 type RateLimitBucket = {
   count: number;
@@ -8,6 +9,29 @@ type RateLimitBucket = {
 
 const buckets = new Map<string, RateLimitBucket>();
 const distributedLimiters = new Map<string, Ratelimit>();
+let lastCleanup = Date.now();
+let warnedOnce = false;
+
+function cleanupExpiredBuckets() {
+  const now = Date.now();
+  if (now - lastCleanup < RATE_LIMIT_CLEANUP_INTERVAL_MS) return;
+  lastCleanup = now;
+
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) {
+      buckets.delete(key);
+    }
+  }
+
+  // Hard cap: if still too large after cleanup, evict oldest entries
+  if (buckets.size > RATE_LIMIT_MAX_ENTRIES) {
+    const entries = [...buckets.entries()].sort((a, b) => a[1].resetAt - b[1].resetAt);
+    const toDelete = entries.slice(0, buckets.size - RATE_LIMIT_MAX_ENTRIES);
+    for (const [key] of toDelete) {
+      buckets.delete(key);
+    }
+  }
+}
 
 function getDistributedLimiter(max: number, windowMs: number): Ratelimit | null {
   const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
@@ -48,6 +72,13 @@ export async function enforceRateLimit(input: {
       remaining: Math.max(0, result.remaining ?? 0),
     };
   }
+
+  // In-memory fallback — not distributed across serverless instances
+  if (process.env.NODE_ENV === "production" && !warnedOnce) {
+    warnedOnce = true;
+    console.warn("[rate-limit] UPSTASH_REDIS_REST_URL not set — using in-memory fallback. Rate limits will not be shared across instances.");
+  }
+  cleanupExpiredBuckets();
 
   const now = Date.now();
   const existing = buckets.get(input.key);

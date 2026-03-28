@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
+import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 
 type VehicleRow = {
   id: string;
@@ -24,6 +25,12 @@ type DriverQueryRow = {
 };
 
 export async function GET(req: NextRequest) {
+  const ip = getRequesterIp(req.headers);
+  const rate = await enforceRateLimit({ key: `drivers:get:${ip}`, max: 30, windowMs: 60_000 });
+  if (!rate.ok) {
+    return NextResponse.json({ error: "Demasiadas solicitudes" }, { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } });
+  }
+
   const supabase = createServerSupabase();
   const { searchParams } = new URL(req.url);
   const vehicleType = searchParams.get("vehicleType");
@@ -95,18 +102,8 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Check if all docs are uploaded -> auto-verify DNI
-  if (["dni_front_url", "dni_back_url", "selfie_url"].includes(field)) {
-    const { data: driver } = await supabase
-      .from("drivers")
-      .select("dni_front_url, dni_back_url, selfie_url")
-      .eq("user_id", user.id)
-      .single();
-
-    if (driver?.dni_front_url && driver?.dni_back_url && driver?.selfie_url) {
-      await supabase.from("drivers").update({ dni_verified: true }).eq("user_id", user.id);
-    }
-  }
+  // DNI verification is handled by admin panel (POST /api/admin/drivers/[id]/verify)
+  // Documents are uploaded here; admin reviews and approves via the admin panel.
 
   return NextResponse.json({ success: true });
 }

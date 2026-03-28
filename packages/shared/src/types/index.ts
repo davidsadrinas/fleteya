@@ -165,6 +165,7 @@ export interface Review {
 
 // Payment
 export type PaymentStatus = "pending" | "approved" | "rejected" | "refunded";
+export type PayoutStatus = "pending" | "scheduled" | "released" | "failed";
 
 export interface Payment {
   id: string;
@@ -173,8 +174,104 @@ export interface Payment {
   commission: number;
   driverPayout: number;
   status: PaymentStatus;
+  payoutStatus: PayoutStatus;
   mercadopagoId?: string;
+  mercadopagoPreferenceId?: string;
+  mercadopagoPaymentType?: string;
+  payoutScheduledAt?: string;
+  payoutReleasedAt?: string;
+  webhookVerified: boolean;
   createdAt: string;
+}
+
+// Admin
+export interface AdminAction {
+  id: string;
+  adminUserId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  details: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface PlatformStats {
+  total_users: number;
+  total_drivers: number;
+  verified_drivers: number;
+  pending_verification: number;
+  total_shipments: number;
+  active_shipments: number;
+  delivered_shipments: number;
+  cancelled_shipments: number;
+  open_disputes: number;
+  total_revenue: number;
+  total_gmv: number;
+  total_referrals: number;
+  active_referral_codes: number;
+}
+
+// Referral
+export interface ReferralCode {
+  id: string;
+  userId: string;
+  code: string;
+  uses: number;
+  maxUses: number;
+  rewardAmount: number;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface ReferralRedemption {
+  id: string;
+  codeId: string;
+  referredUserId: string;
+  referrerUserId: string;
+  referrerReward: number;
+  referredReward: number;
+  referrerCredited: boolean;
+  referredCredited: boolean;
+  firstShipmentId?: string;
+  createdAt: string;
+}
+
+// Web Push
+export interface PushSubscription {
+  id: string;
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  authKey: string;
+  active: boolean;
+  createdAt: string;
+}
+
+// Instant Quote
+export interface QuoteSession {
+  id: string;
+  sessionToken: string;
+  legs: QuoteLeg[];
+  shipmentType?: string;
+  vehicleType?: string;
+  basePrice?: number;
+  finalPrice?: number;
+  commission?: number;
+  converted: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface QuoteLeg {
+  originAddress: string;
+  originLat: number;
+  originLng: number;
+  destAddress: string;
+  destLat: number;
+  destLng: number;
+  distanceKm: number;
+  price: number;
+  discount: number;
 }
 
 // Vehicle type metadata

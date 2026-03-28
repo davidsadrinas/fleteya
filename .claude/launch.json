@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Next.js Web (dev)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@fletaya/web", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Expo Mobile (dev)",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@fletaya/mobile", "start"],
+      "port": 8081
+    }
+  ]
+}

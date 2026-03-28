@@ -74,7 +74,54 @@ export const acarreoVehicleSchema = z.object({
   notes: z.string().max(300).optional(),
 });
 
+// Quote (no auth)
+export const quoteSchema = z.object({
+  legs: z.array(shipmentLegSchema).min(1).max(5),
+  shipmentType: z
+    .enum(["mudanza", "mercaderia", "materiales", "electrodomesticos", "muebles", "acarreo_vehiculo", "limpieza_atmosferico", "residuos"])
+    .optional(),
+  vehicleType: z.enum(["moto", "utilitario", "camioneta", "camion", "grua", "atmosferico"]).optional(),
+});
+
+// Push subscription
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().url(),
+  p256dh: z.string().min(1),
+  auth: z.string().min(1),
+});
+
+// Referral
+export const redeemReferralSchema = z.object({
+  code: z.string().min(3).max(20),
+});
+
+// Admin
+export const verifyDriverSchema = z.object({
+  action: z.enum(["approve", "reject"]),
+  reason: z.string().max(500).optional(),
+});
+
+export const resolveDisputeSchema = z.object({
+  status: z.enum(["under_review", "resolved", "rejected"]),
+  resolution_note: z.string().max(1000).optional(),
+});
+
+// Payment
+export const createPaymentSchema = z.object({
+  shipmentId: z.string().uuid(),
+});
+
+// Push send
+export const pushSendSchema = z.object({
+  userId: z.string().uuid(),
+  title: z.string().min(1).max(100),
+  body: z.string().min(1).max(500),
+  url: z.string().optional(),
+});
+
 export type CreateShipmentInput = z.infer<typeof createShipmentSchema>;
 export type CreateVehicleInput = z.infer<typeof createVehicleSchema>;
 export type CreateReviewInput = z.infer<typeof createReviewSchema>;
 export type TrackingPointInput = z.infer<typeof trackingPointSchema>;
+export type QuoteInput = z.infer<typeof quoteSchema>;
+export type RedeemReferralInput = z.infer<typeof redeemReferralSchema>;

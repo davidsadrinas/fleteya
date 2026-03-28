@@ -4,6 +4,7 @@ import {
   haversineDistanceMeters,
   type AssignmentCandidate,
 } from "@shared/assignment";
+import { MIN_DRIVER_RATING, BACKHAUL_SEARCH_RADIUS_KM } from "@shared/constants";
 import { createServiceRoleSupabase } from "@/lib/supabase/admin";
 
 const ACTIVE_DRIVER_STATUSES = [
@@ -191,7 +192,35 @@ export async function runShipmentAssignment(options: {
     };
   });
 
-  const winner = strategy.selectBest(candidates, {
+  // Filter candidates: minimum rating + valid documents
+  const today = new Date().toISOString().slice(0, 10);
+  const validCandidates: AssignmentCandidate[] = [];
+  for (const c of candidates) {
+    // Minimum rating filter (skip for drivers with no trips yet — rating defaults to 0)
+    if (c.totalTrips > 0 && c.rating < MIN_DRIVER_RATING) continue;
+
+    const { data: driver } = await admin
+      .from("drivers")
+      .select("license_expiry, insurance_expiry, vtv_expiry, verified")
+      .eq("id", c.driverId)
+      .single();
+
+    if (!driver || !driver.verified) continue;
+    if (driver.license_expiry && driver.license_expiry < today) continue;
+    if (driver.insurance_expiry && driver.insurance_expiry < today) continue;
+    if (driver.vtv_expiry && driver.vtv_expiry < today) continue;
+
+    validCandidates.push(c);
+  }
+
+  if (validCandidates.length === 0) {
+    return {
+      ok: false,
+      data: { status: 400, error: "No hay candidatos con documentación vigente y rating mínimo" },
+    };
+  }
+
+  const winner = strategy.selectBest(validCandidates, {
     shipmentId,
     firstLegOriginLat: pickupLat,
     firstLegOriginLng: pickupLng,
@@ -218,6 +247,15 @@ export async function runShipmentAssignment(options: {
 
   const vehicleId = vehicleRow?.id ?? null;
 
+  // Backhaul auto-detection: if this pickup is within BACKHAUL_SEARCH_RADIUS_KM
+  // of the driver's current active trip destination, mark as backhaul (reduced commission)
+  let isBackhaul = false;
+  const chainEnd = chainEnds.get(winner.driverId);
+  if (chainEnd && pickupLat != null && pickupLng != null) {
+    const chainDistKm = haversineDistanceMeters(chainEnd.lat, chainEnd.lng, pickupLat, pickupLng) / 1000;
+    isBackhaul = chainDistKm <= BACKHAUL_SEARCH_RADIUS_KM;
+  }
+
   const { error: upShip } = await admin
     .from("shipments")
     .update({
@@ -225,6 +263,7 @@ export async function runShipmentAssignment(options: {
       vehicle_id: vehicleId,
       status: "accepted",
       assignment_strategy_id: strategy.id,
+      is_backhaul: isBackhaul,
       updated_at: new Date().toISOString(),
     })
     .eq("id", shipmentId)

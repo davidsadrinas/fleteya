@@ -42,3 +42,29 @@ export const HELPER_OPTIONS = [
   { id: 1, label: "1 ayudante" },
   { id: 2, label: "2 ayudantes" },
 ] as const;
+
+// Referral program
+export const REFERRAL_REWARD_AMOUNT = 500; // ARS
+export const REFERRAL_MAX_USES = 50;
+export const REFERRAL_CODE_LENGTH = 8;
+
+// Rate limit defaults
+export const RATE_LIMIT_MAX_ENTRIES = 10_000;
+export const RATE_LIMIT_CLEANUP_INTERVAL_MS = 60_000; // 1 minute
+
+// Web push VAPID (public key only - private key in env)
+export const VAPID_SUBJECT = "mailto:soporte@fletaya.com.ar";
+
+// Admin
+export const ADMIN_DISPUTE_RESOLUTIONS = [
+  { id: "resolved_favor_client", label: "Resuelto a favor del cliente" },
+  { id: "resolved_favor_driver", label: "Resuelto a favor del fletero" },
+  { id: "resolved_partial", label: "Resolución parcial" },
+  { id: "rejected", label: "Rechazado" },
+] as const;
+
+// Document expiry warning (days before expiry)
+export const DOC_EXPIRY_WARNING_DAYS = 30;
+
+// Minimum driver rating to be eligible for assignment (0-5 scale)
+export const MIN_DRIVER_RATING = 3.0;

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { STATUS_META } from "@shared/types";
 import { useRealtimeShipmentStatus, useRealtimeTracking, useShareLocation } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase-client";
+import { apiFetch } from "@/lib/api-fetch";
 import { ChatPanel } from "@/components/tracking/chat-panel";
 import { EvidencePanel } from "@/components/tracking/evidence-panel";
 import { DisputesPanel } from "@/components/tracking/disputes-panel";
@@ -212,7 +213,7 @@ function TrackingContent() {
       if (!shipmentId) return;
       const text = message.trim();
       if (!text) return;
-      const res = await fetch(`/api/shipments/${shipmentId}/chat`, {
+      const res = await apiFetch(`/api/shipments/${shipmentId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: text, quickTag: quickTag ?? null }),
@@ -241,7 +242,7 @@ function TrackingContent() {
         setFeedback(uploadError.message);
         return;
       }
-      const res = await fetch(`/api/shipments/${shipmentId}/evidence`, {
+      const res = await apiFetch(`/api/shipments/${shipmentId}/evidence`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage, fileUrl: filePath }),
@@ -261,7 +262,7 @@ function TrackingContent() {
   const reportProblem = async () => {
     try {
       if (!shipmentId) return;
-      const res = await fetch(`/api/shipments/${shipmentId}/disputes`, {
+      const res = await apiFetch(`/api/shipments/${shipmentId}/disputes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: disputeReason, description: disputeDetail }),
@@ -413,7 +414,7 @@ function TrackingContent() {
               className="rounded-md border border-fy-border px-2 py-1.5 text-[11px]"
               onClick={async () => {
                 if (!shipmentId) return;
-                const res = await fetch(`/api/shipments/${shipmentId}/status`, {
+                const res = await apiFetch(`/api/shipments/${shipmentId}/status`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ status: next.value }),

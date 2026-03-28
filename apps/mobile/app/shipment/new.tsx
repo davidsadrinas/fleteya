@@ -74,6 +74,8 @@ export default function ShipmentWizardScreen() {
     return DEFAULT_REGION;
   }, [origin]);
 
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000/api";
+
   const saveShipment = async () => {
     if (!origin || !destination) {
       Alert.alert("Faltan direcciones", "Completa origen y destino.");
@@ -83,49 +85,45 @@ export default function ShipmentWizardScreen() {
     try {
       setLoading(true);
       const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) {
+      const session = sessionData.session;
+      if (!session?.user.id) {
         router.replace("/auth/login");
         return;
       }
 
-      const { data: shipment, error: shipmentError } = await supabase
-        .from("shipments")
-        .insert({
-          client_id: userId,
-          status: "pending",
+      // Call web API to create shipment with proper pricing
+      const res = await fetch(`${apiUrl}/shipments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           type,
-          description,
+          description: description || undefined,
           helpers: Number(helpers) || 0,
-          scheduled_at: new Date().toISOString(),
-          base_price: 0,
-          discount: 0,
-          final_price: 0,
-          commission: 0,
-          is_backhaul: false,
-        })
-        .select("id")
-        .single();
-
-      if (shipmentError || !shipment?.id) throw shipmentError ?? new Error("No se pudo crear envio.");
-
-      const { error: legError } = await supabase.from("shipment_legs").insert({
-        shipment_id: shipment.id,
-        leg_order: 0,
-        origin_address: origin.address,
-        origin_location: `POINT(${origin.lng} ${origin.lat})`,
-        dest_address: destination.address,
-        dest_location: `POINT(${destination.lng} ${destination.lat})`,
-        distance_km: 0,
-        estimated_minutes: 0,
-        price: 0,
-        discount: 0,
+          legs: [
+            {
+              originAddress: origin.address,
+              originLat: origin.lat,
+              originLng: origin.lng,
+              destAddress: destination.address,
+              destLat: destination.lat,
+              destLng: destination.lng,
+            },
+          ],
+        }),
       });
-      if (legError) throw legError;
 
-      router.replace(`/tracking/${shipment.id}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "No se pudo crear el envío");
+
+      const shipmentId = json.shipment?.id;
+      if (!shipmentId) throw new Error("No se recibió ID del envío");
+
+      router.replace(`/tracking/${shipmentId}`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "No se pudo crear el envio.";
+      const message = err instanceof Error ? err.message : "No se pudo crear el envío.";
       Alert.alert("Error", message);
     } finally {
       setLoading(false);
