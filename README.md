@@ -188,6 +188,8 @@ vercel
 
 # Configurar variables de entorno en Vercel Dashboard
 # IMPORTANTE: NEXT_PUBLIC_APP_URL debe apuntar a tu dominio, NO a localhost
+# Si usas Install Command custom, evitar `corepack enable` en CI:
+# corepack prepare pnpm@10.28.1 --activate && pnpm install --frozen-lockfile
 ```
 
 ### Mobile (Expo EAS)

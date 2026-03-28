@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^3.3.0",
     "@next-auth/supabase-adapter": "^0.2.1",
     "@react-google-maps/api": "^2.19.0",
+    "@sentry/nextjs": "^10.46.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "@upstash/ratelimit": "^2.0.8",

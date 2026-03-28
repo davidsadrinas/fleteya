@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.28.1 --activate && pnpm install",
-  "buildCommand": "cd ../.. && pnpm build:web",
+  "installCommand": "cd ../.. && corepack prepare pnpm@10.28.1 --activate && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm --filter @fletaya/web build",
   "outputDirectory": ".next"
 }

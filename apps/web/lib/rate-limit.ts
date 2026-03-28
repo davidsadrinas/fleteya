@@ -17,19 +17,21 @@ function cleanupExpiredBuckets() {
   if (now - lastCleanup < RATE_LIMIT_CLEANUP_INTERVAL_MS) return;
   lastCleanup = now;
 
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) {
-      buckets.delete(key);
-    }
-  }
+  const expiredKeys: string[] = [];
+  buckets.forEach((bucket, key) => {
+    if (bucket.resetAt <= now) expiredKeys.push(key);
+  });
+  expiredKeys.forEach((key) => buckets.delete(key));
 
   // Hard cap: if still too large after cleanup, evict oldest entries
   if (buckets.size > RATE_LIMIT_MAX_ENTRIES) {
-    const entries = [...buckets.entries()].sort((a, b) => a[1].resetAt - b[1].resetAt);
-    const toDelete = entries.slice(0, buckets.size - RATE_LIMIT_MAX_ENTRIES);
-    for (const [key] of toDelete) {
-      buckets.delete(key);
-    }
+    const entries: Array<{ key: string; resetAt: number }> = [];
+    buckets.forEach((bucket, key) => {
+      entries.push({ key, resetAt: bucket.resetAt });
+    });
+    entries.sort((a, b) => a.resetAt - b.resetAt);
+    const overflow = buckets.size - RATE_LIMIT_MAX_ENTRIES;
+    entries.slice(0, overflow).forEach((entry) => buckets.delete(entry.key));
   }
 }
 
