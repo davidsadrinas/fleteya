@@ -4,16 +4,16 @@ import { POST } from "@/app/api/shipments/route";
 
 const getUser = vi.fn();
 const single = vi.fn();
-const shipmentSelect = vi.fn();
-const shipmentInsert = vi.fn();
-const legsInsert = vi.fn();
+const eq = vi.fn();
 const select = vi.fn();
 const from = vi.fn();
+const rpc = vi.fn();
 
 vi.mock("@/lib/supabase-server", () => ({
   createServerSupabase: () => ({
     auth: { getUser },
     from,
+    rpc,
   }),
 }));
 
@@ -23,14 +23,13 @@ describe("POST /api/shipments", () => {
     getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
 
     single.mockResolvedValue({ data: { id: "shipment-1" }, error: null });
-    shipmentSelect.mockReturnValue({ single });
-    shipmentInsert.mockReturnValue({ select: shipmentSelect });
-    legsInsert.mockResolvedValue({ error: null });
+    eq.mockReturnValue({ single });
+    select.mockReturnValue({ eq });
+    rpc.mockResolvedValue({ data: "shipment-1", error: null });
 
     from.mockImplementation((table: string) => {
-      if (table === "shipments") return { insert: shipmentInsert };
-      if (table === "shipment_legs") return { insert: legsInsert };
-      return { insert: vi.fn() };
+      if (table === "shipments") return { select };
+      return { select: vi.fn() };
     });
   });
 
@@ -69,7 +68,6 @@ describe("POST /api/shipments", () => {
     expect(res.status).toBe(201);
     expect(json.shipment.id).toBe("shipment-1");
     expect(json.legs).toHaveLength(1);
-    expect(shipmentInsert).toHaveBeenCalledOnce();
-    expect(legsInsert).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledOnce();
   });
 });

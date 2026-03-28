@@ -65,7 +65,7 @@ export default function SettingsPage() {
         <div className="text-4xl mb-3">⚙️</div>
         <h2 className="text-lg font-display font-bold mb-2">Configuración</h2>
         <p className="text-fy-dim text-sm leading-relaxed">
-          Centro único para cuenta, avisos y pagos. Los toggles y formularios se van activando según avance el producto.
+          Centro único para cuenta, avisos y pagos. Acá tenés una vista consolidada de tus opciones y políticas vigentes.
         </p>
       </div>
 
@@ -107,9 +107,6 @@ export default function SettingsPage() {
                 >
                   <div className="font-heading font-semibold text-fy-text text-sm mb-1">{item.label}</div>
                   <p className="text-fy-dim text-xs leading-relaxed">{item.desc}</p>
-                  <span className="inline-block mt-2 text-[10px] uppercase tracking-wide text-fy-dim">
-                    Próximo: UI editable
-                  </span>
                 </li>
               ))}
             </ul>

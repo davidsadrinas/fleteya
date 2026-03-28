@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthSync } from "@/components/auth-sync";
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -36,6 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={tab.href}
                 href={tab.href}
+                aria-label={tab.label}
                 className="flex flex-1 flex-col items-center justify-center gap-1 min-w-0 min-h-[52px] px-1 touch-manipulation text-fy-dim hover:text-brand-teal-light active:text-brand-teal-light transition-colors [-webkit-tap-highlight-color:transparent]"
               >
                 <span className="text-lg sm:text-xl leading-none" aria-hidden>

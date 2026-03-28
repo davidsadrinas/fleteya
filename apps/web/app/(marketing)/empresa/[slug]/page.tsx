@@ -5,6 +5,7 @@ import {
   FOOTER_COMPANY_LINKS,
   INSTITUTIONAL_COMPANY_DOCS,
 } from "@/lib/content/institutional-web";
+import { getPublicSiteUrl } from "@/lib/content/site-url";
 
 type CompanyPageProps = {
   params: {
@@ -19,6 +20,7 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: CompanyPageProps): Metadata {
+  const siteUrl = getPublicSiteUrl();
   const content = INSTITUTIONAL_COMPANY_DOCS[params.slug];
   if (!content) {
     return {
@@ -36,7 +38,7 @@ export function generateMetadata({ params }: CompanyPageProps): Metadata {
     openGraph: {
       title: `${content.title} | FleteYa`,
       description: content.body[0] ?? content.subtitle,
-      url: `https://fletaya.com.ar/empresa/${params.slug}`,
+      url: `${siteUrl}/empresa/${params.slug}`,
       type: "article",
       locale: "es_AR",
     },

@@ -5,6 +5,7 @@ import {
   FOOTER_LEGAL_LINKS,
   INSTITUTIONAL_LEGAL_DOCS,
 } from "@/lib/content/institutional-web";
+import { getPublicSiteUrl } from "@/lib/content/site-url";
 
 type LegalPageProps = {
   params: {
@@ -19,6 +20,7 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: LegalPageProps): Metadata {
+  const siteUrl = getPublicSiteUrl();
   const content = INSTITUTIONAL_LEGAL_DOCS[params.slug];
   if (!content) {
     return {
@@ -36,7 +38,7 @@ export function generateMetadata({ params }: LegalPageProps): Metadata {
     openGraph: {
       title: `${content.title} | FleteYa`,
       description: content.body[0] ?? content.subtitle,
-      url: `https://fletaya.com.ar/legal/${params.slug}`,
+      url: `${siteUrl}/legal/${params.slug}`,
       type: "article",
       locale: "es_AR",
     },

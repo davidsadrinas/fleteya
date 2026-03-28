@@ -20,9 +20,14 @@ type DriverRow = {
   rating: number;
   total_trips: number;
   dni_front_url: string | null;
+  dni_back_url: string | null;
+  selfie_url: string | null;
   license_url: string | null;
+  license_expiry: string | null;
   insurance_url: string | null;
+  insurance_expiry: string | null;
   vtv_url: string | null;
+  vtv_expiry: string | null;
 };
 
 type VehicleRow = {
@@ -55,7 +60,7 @@ export default function ProfilePage() {
       const { data: driverData } = await supabase
         .from("drivers")
         .select(
-          "id,verified,rating,total_trips,dni_front_url,license_url,insurance_url,vtv_url"
+          "id,verified,rating,total_trips,dni_front_url,dni_back_url,selfie_url,license_url,license_expiry,insurance_url,insurance_expiry,vtv_url,vtv_expiry"
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -71,16 +76,36 @@ export default function ProfilePage() {
 
   const docsCompleted = useMemo(() => {
     if (!driver) return 0;
-    const docs = [driver.dni_front_url, driver.license_url, driver.insurance_url, driver.vtv_url];
+    const docs = [
+      driver.dni_front_url,
+      driver.dni_back_url,
+      driver.selfie_url,
+      driver.license_url,
+      driver.insurance_url,
+      driver.vtv_url,
+    ];
     return docs.filter(Boolean).length;
   }, [driver]);
 
-  const uploadDoc = async (field: "dni_front_url" | "license_url" | "insurance_url" | "vtv_url", file?: File | null) => {
+  const uploadDoc = async (
+    field:
+      | "dni_front_url"
+      | "dni_back_url"
+      | "selfie_url"
+      | "license_url"
+      | "insurance_url"
+      | "vtv_url",
+    file?: File | null
+  ) => {
     if (!file) return;
     const parsed = documentUploadSchema.safeParse({
       documentType:
         field === "dni_front_url"
           ? "dni_front"
+          : field === "dni_back_url"
+          ? "dni_back"
+          : field === "selfie_url"
+          ? "selfie"
           : field === "license_url"
           ? "license"
           : field === "insurance_url"
@@ -104,11 +129,10 @@ export default function ProfilePage() {
       setMessage(upErr.message);
       return;
     }
-    const url = supabase.storage.from("dni-documents").getPublicUrl(path).data.publicUrl;
     const res = await fetch("/api/drivers", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ field, value: url }),
+      body: JSON.stringify({ field, value: path }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -119,7 +143,7 @@ export default function ProfilePage() {
     const { data: driverData } = await supabase
       .from("drivers")
       .select(
-        "id,verified,rating,total_trips,dni_front_url,license_url,insurance_url,vtv_url"
+        "id,verified,rating,total_trips,dni_front_url,dni_back_url,selfie_url,license_url,license_expiry,insurance_url,insurance_expiry,vtv_url,vtv_expiry"
       )
       .eq("user_id", user.id)
       .maybeSingle();
@@ -128,8 +152,10 @@ export default function ProfilePage() {
 
   const setActiveVehicle = async (vehicleId: string) => {
     if (!driver?.id) return;
-    await supabase.from("vehicles").update({ active: false }).eq("driver_id", driver.id);
-    await supabase.from("vehicles").update({ active: true }).eq("id", vehicleId);
+    await supabase.rpc("set_active_vehicle", {
+      p_driver_id: driver.id,
+      p_vehicle_id: vehicleId,
+    });
     const { data } = await supabase
       .from("vehicles")
       .select("id,type,brand,year,plate,active")
@@ -165,9 +191,9 @@ export default function ProfilePage() {
             Fletero
           </h3>
           <p className="text-xs text-fy-soft mb-3">
-            Rating {driver?.rating ?? 0} · Viajes {driver?.total_trips ?? 0} · Documentos {docsCompleted}/4
+            Rating {driver?.rating ?? 0} · Viajes {driver?.total_trips ?? 0} · Documentos {docsCompleted}/6
           </p>
-          {docsCompleted < 4 ? (
+          {docsCompleted < 6 ? (
             <p className="text-xs text-brand-amber mb-3">
               No podés recibir viajes hasta completar la documentación obligatoria.
             </p>
@@ -175,6 +201,8 @@ export default function ProfilePage() {
           <div className="space-y-3">
             {[
               { field: "dni_front_url", label: "DNI" },
+              { field: "dni_back_url", label: "DNI dorso" },
+              { field: "selfie_url", label: "Selfie validación" },
               { field: "license_url", label: "Licencia" },
               { field: "insurance_url", label: "Seguro" },
               { field: "vtv_url", label: "VTV/RTO" },
@@ -192,11 +220,26 @@ export default function ProfilePage() {
                   className="text-xs"
                   onChange={(e) =>
                     void uploadDoc(
-                      doc.field as "dni_front_url" | "license_url" | "insurance_url" | "vtv_url",
+                      doc.field as
+                        | "dni_front_url"
+                        | "dni_back_url"
+                        | "selfie_url"
+                        | "license_url"
+                        | "insurance_url"
+                        | "vtv_url",
                       e.target.files?.[0] ?? null
                     )
                   }
                 />
+                {doc.field === "license_url" && driver?.license_expiry ? (
+                  <p className="mt-1 text-[11px] text-fy-dim">Vence: {driver.license_expiry}</p>
+                ) : null}
+                {doc.field === "insurance_url" && driver?.insurance_expiry ? (
+                  <p className="mt-1 text-[11px] text-fy-dim">Vence: {driver.insurance_expiry}</p>
+                ) : null}
+                {doc.field === "vtv_url" && driver?.vtv_expiry ? (
+                  <p className="mt-1 text-[11px] text-fy-dim">Vence: {driver.vtv_expiry}</p>
+                ) : null}
               </label>
             ))}
           </div>

@@ -90,6 +90,23 @@ export default function DashboardPage() {
         </ol>
       </section>
 
+      <section className="mb-6">
+        <h3 className="text-sm font-display font-bold mb-3">Tipos de servicio</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {[
+            { icon: "📦", title: "Flete", copy: "Mudanzas y mercadería general." },
+            { icon: "🚚", title: "Acarreo", copy: "Traslado de vehículo y cargas especiales." },
+            { icon: "🧪", title: "Atmosférico", copy: "Servicios específicos y residuos." },
+          ].map((service) => (
+            <div key={service.title} className="rounded-xl border border-fy-border bg-brand-card/40 p-3">
+              <p className="text-lg mb-1">{service.icon}</p>
+              <p className="text-sm font-semibold text-fy-text">{service.title}</p>
+              <p className="text-[11px] text-fy-dim mt-1 leading-relaxed">{service.copy}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <Link
         href="/shipment"
         className="block w-full p-5 rounded-2xl bg-gradient-to-r from-brand-teal to-brand-teal-light mb-4 relative overflow-hidden"
@@ -111,7 +128,7 @@ export default function DashboardPage() {
       </Link>
 
       <Link
-        href="/tracking"
+        href={activeShipment?.id ? `/tracking?shipmentId=${activeShipment.id}` : "/tracking"}
         className="flex items-center gap-3 p-4 rounded-xl bg-brand-card border border-brand-teal/25 mb-2"
       >
         <div className="w-10 h-10 rounded-xl bg-brand-teal/15 flex items-center justify-center text-xl">
@@ -128,39 +145,19 @@ export default function DashboardPage() {
         <span className="text-brand-teal-light">→</span>
       </Link>
       <p className="text-[11px] text-fy-dim mb-6 px-1">
-        El ejemplo de “viaje activo” es ilustrativo hasta que conectemos tu historial con Supabase.
+        Si tenés un viaje activo, el botón abre el seguimiento de ese envío.
       </p>
 
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-display font-bold">Viajes de retorno</h3>
-        <span className="text-brand-teal-light text-xs font-semibold">Pronto en vivo</span>
+        <span className="text-brand-teal-light text-xs font-semibold">Activos</span>
       </div>
       <p className="text-fy-dim text-xs mb-3 leading-relaxed">
         Fletes donde el conductor aprovecha espacio en la vuelta u ofertas encadenadas: suele traducirse en menos costo para vos y más carga útil para el fletero.
       </p>
 
-      {(backhaulTrips.length
-        ? backhaulTrips
-        : [
-            {
-              id: "demo-1",
-              from: "Palermo",
-              to: "Avellaneda",
-              price: "8.500",
-              time: "Hoy 16:00",
-              space: "70",
-              note: "Ejemplo",
-            },
-            {
-              id: "demo-2",
-              from: "Belgrano",
-              to: "Quilmes",
-              price: "15.200",
-              time: "Hoy 18:30",
-              space: "45",
-              note: "Ejemplo",
-            },
-          ]).map((trip) => (
+      {backhaulTrips.length ? (
+        backhaulTrips.map((trip) => (
         <div key={trip.id} className="card mb-2 !p-3.5 opacity-90">
           <div className="flex justify-between items-start mb-2">
             <div>
@@ -182,7 +179,12 @@ export default function DashboardPage() {
             <span className="text-brand-amber font-bold font-display">${trip.price}</span>
           </div>
         </div>
-      ))}
+        ))
+      ) : (
+        <p className="text-xs text-fy-dim rounded-xl border border-fy-border bg-brand-card/30 p-3">
+          Cuando haya viajes de retorno compatibles con tus tramos, vas a verlos acá en tiempo real.
+        </p>
+      )}
 
       <Link
         href="/profile"

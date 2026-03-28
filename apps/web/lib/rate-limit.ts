@@ -1,9 +1,32 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
 type RateLimitBucket = {
   count: number;
   resetAt: number;
 };
 
 const buckets = new Map<string, RateLimitBucket>();
+const distributedLimiters = new Map<string, Ratelimit>();
+
+function getDistributedLimiter(max: number, windowMs: number): Ratelimit | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!url || !token) return null;
+  const cacheKey = `${max}:${windowMs}`;
+  const existing = distributedLimiters.get(cacheKey);
+  if (existing) return existing;
+
+  const redis = new Redis({ url, token });
+  const limiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(max, `${Math.ceil(windowMs / 1000)} s`),
+    analytics: true,
+    prefix: "fletaya:ratelimit",
+  });
+  distributedLimiters.set(cacheKey, limiter);
+  return limiter;
+}
 
 export function getRequesterIp(headers: Headers): string {
   const forwarded = headers.get("x-forwarded-for");
@@ -11,11 +34,21 @@ export function getRequesterIp(headers: Headers): string {
   return headers.get("x-real-ip") ?? "unknown";
 }
 
-export function enforceRateLimit(input: {
+export async function enforceRateLimit(input: {
   key: string;
   max: number;
   windowMs: number;
-}): { ok: boolean; retryAfterSeconds: number; remaining: number } {
+}): Promise<{ ok: boolean; retryAfterSeconds: number; remaining: number }> {
+  const distributed = getDistributedLimiter(input.max, input.windowMs);
+  if (distributed) {
+    const result = await distributed.limit(input.key);
+    return {
+      ok: result.success,
+      retryAfterSeconds: Math.max(1, Math.ceil(((result.reset ?? Date.now() + input.windowMs) - Date.now()) / 1000)),
+      remaining: Math.max(0, result.remaining ?? 0),
+    };
+  }
+
   const now = Date.now();
   const existing = buckets.get(input.key);
   if (!existing || existing.resetAt <= now) {

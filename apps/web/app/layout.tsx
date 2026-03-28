@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "@/styles/globals.css";
+import { getPublicSiteUrl } from "@/lib/content/site-url";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -9,13 +10,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fletaya.com.ar"),
+  metadataBase: new URL(getPublicSiteUrl()),
   title: "FleteYa — Tu flete, simple y rápido.",
   description:
     "Marketplace de fletes en AMBA: publicás el envío, los fleteros se postulan y FleteYa asigna por cercanía y reputación. Retornos y tramos encadenados para pagar menos.",
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,

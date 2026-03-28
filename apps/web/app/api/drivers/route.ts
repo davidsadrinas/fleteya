@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 
+type VehicleRow = {
+  id: string;
+  type: string;
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  plate: string | null;
+  active: boolean | null;
+  hazmat_cert_url: string | null;
+  towing_license_url: string | null;
+};
+
+type DriverQueryRow = {
+  id: string;
+  rating: number;
+  total_trips: number;
+  verified: boolean;
+  dni_verified: boolean;
+  profiles: { name: string | null; avatar_url: string | null; phone: string | null };
+  vehicles: VehicleRow[];
+};
+
 export async function GET(req: NextRequest) {
   const supabase = createServerSupabase();
   const { searchParams } = new URL(req.url);
   const vehicleType = searchParams.get("vehicleType");
-  const lat = parseFloat(searchParams.get("lat") || "0");
-  const lng = parseFloat(searchParams.get("lng") || "0");
-  const radiusKm = parseInt(searchParams.get("radius") || "15");
 
   let query = supabase
     .from("drivers")
@@ -23,7 +42,8 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Format response
-  const drivers = (data || []).map((d: any) => ({
+  const rows = (data as DriverQueryRow[] | null) ?? [];
+  const drivers = rows.map((d) => ({
     id: d.id,
     name: d.profiles.name,
     avatarUrl: d.profiles.avatar_url,
@@ -31,7 +51,7 @@ export async function GET(req: NextRequest) {
     totalTrips: d.total_trips,
     verified: d.verified,
     dniVerified: d.dni_verified,
-    vehicles: d.vehicles.map((v: any) => ({
+    vehicles: d.vehicles.map((v) => ({
       id: v.id,
       type: v.type,
       brand: v.brand,
@@ -42,7 +62,7 @@ export async function GET(req: NextRequest) {
       hasHazmatCert: !!v.hazmat_cert_url,
       hasTowingLicense: !!v.towing_license_url,
     })),
-    activeVehicle: d.vehicles.find((v: any) => v.active) || null,
+    activeVehicle: d.vehicles.find((v) => v.active) || null,
   }));
 
   return NextResponse.json({ drivers });

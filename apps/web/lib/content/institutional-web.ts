@@ -50,9 +50,9 @@ export const INSTITUTIONAL_WEB_RESUME = {
 } as const;
 
 export const MARKETING_NAV_LINKS: readonly InstitutionalLinkItem[] = [
-  { href: "#como-funciona", label: "Cómo funciona" },
-  { href: "#fleteros", label: "Soy fletero" },
-  { href: "#precios", label: "Precios" },
+  { href: "/como-funciona", label: "Cómo funciona" },
+  { href: "/fleteros", label: "Soy fletero" },
+  { href: "/#precios", label: "Precios" },
 ] as const;
 
 export const MARKETING_NAV_CTA = {
@@ -244,7 +244,7 @@ export const MARKETING_FAQ = {
 
 export const FOOTER_PRODUCT_LINKS: readonly InstitutionalLinkItem[] = [
   {
-    href: "/#como-funciona",
+    href: "/como-funciona",
     label: "Cómo funciona",
   },
   {
@@ -252,7 +252,7 @@ export const FOOTER_PRODUCT_LINKS: readonly InstitutionalLinkItem[] = [
     label: "Precios",
   },
   {
-    href: "/#fleteros",
+    href: "/fleteros",
     label: "Para fleteros",
   },
   {

@@ -33,7 +33,11 @@ export function MarketingNavbar() {
               {l.label}
             </Link>
           ))}
-          <Link href={MARKETING_NAV_CTA.href} className="btn-primary text-sm !py-2.5 !px-5">
+          <Link
+            href={MARKETING_NAV_CTA.href}
+            data-marketing-event="navbar_cta_desktop"
+            className="btn-primary text-sm !py-2.5 !px-5"
+          >
             {MARKETING_NAV_CTA.label}
           </Link>
         </div>
@@ -50,6 +54,7 @@ export function MarketingNavbar() {
           </button>
           <Link
             href={MARKETING_NAV_CTA.href}
+            data-marketing-event="navbar_cta_mobile"
             className="btn-primary text-sm !py-2.5 !px-4 whitespace-nowrap min-h-[44px] flex items-center"
           >
             {MARKETING_NAV_CTA.label}

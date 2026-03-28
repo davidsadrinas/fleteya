@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const ip = getRequesterIp(req.headers);
-  const rate = enforceRateLimit({
+  const rate = await enforceRateLimit({
     key: `dispute:${shipmentId}:${user.id}:${ip}`,
     max: 6,
     windowMs: 15 * 60_000,
@@ -64,12 +64,26 @@ export async function POST(req: NextRequest, context: RouteContext) {
   const description =
     typeof body.description === "string" ? body.description.trim() : null;
   const evidenceUrls = Array.isArray(body.evidenceUrls)
-    ? body.evidenceUrls.filter((x): x is string => typeof x === "string").slice(0, 10)
+    ? body.evidenceUrls
+        .filter((x): x is string => typeof x === "string")
+        .map((url) => url.trim())
+        .filter((url) => {
+          try {
+            const parsed = new URL(url);
+            return parsed.protocol === "http:" || parsed.protocol === "https:";
+          } catch {
+            return false;
+          }
+        })
+        .slice(0, 10)
     : [];
 
   if (!reason) return NextResponse.json({ error: "Razón requerida" }, { status: 400 });
   if (reason.length > 120) {
     return NextResponse.json({ error: "Razón demasiado larga" }, { status: 400 });
+  }
+  if (description && description.length > 1000) {
+    return NextResponse.json({ error: "Descripción demasiado larga" }, { status: 400 });
   }
 
   const { data, error } = await supabase

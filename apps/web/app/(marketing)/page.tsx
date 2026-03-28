@@ -15,6 +15,7 @@ import {
   MARKETING_REVIEWS,
   MARKETING_STATS,
 } from "@/lib/content/institutional-web";
+import { getPublicSiteUrl } from "@/lib/content/site-url";
 
 function Hero() {
   return (
@@ -360,35 +361,36 @@ function Footer() {
 }
 
 export default function LandingPage() {
+  const siteUrl = getPublicSiteUrl();
   const schemaData = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://fletaya.com.ar/#organization",
+        "@id": `${siteUrl}/#organization`,
         name: "FleteYa",
-        url: "https://fletaya.com.ar",
+        url: siteUrl,
         sameAs: FOOTER_SOCIAL_LINKS.map((item) => item.href),
       },
       {
         "@type": "WebSite",
-        "@id": "https://fletaya.com.ar/#website",
-        url: "https://fletaya.com.ar",
+        "@id": `${siteUrl}/#website`,
+        url: siteUrl,
         name: "FleteYa",
         inLanguage: "es-AR",
       },
       {
         "@type": "Service",
-        "@id": "https://fletaya.com.ar/#service",
+        "@id": `${siteUrl}/#service`,
         serviceType: "Marketplace de fletes",
         areaServed: "AMBA",
         provider: {
-          "@id": "https://fletaya.com.ar/#organization",
+          "@id": `${siteUrl}/#organization`,
         },
       },
       {
         "@type": "FAQPage",
-        "@id": "https://fletaya.com.ar/#faq",
+        "@id": `${siteUrl}/#faq`,
         mainEntity: MARKETING_FAQ.items.map((item) => ({
           "@type": "Question",
           name: item.question,
@@ -411,12 +413,19 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{
           __html: `(() => {
   if (typeof window === "undefined") return;
+  if (window.__fletayaMarketingListenerAttached) return;
+  window.__fletayaMarketingListenerAttached = true;
   const onClick = (ev) => {
     const target = ev.target instanceof Element ? ev.target.closest("[data-marketing-event]") : null;
     if (!target) return;
     const eventName = target.getAttribute("data-marketing-event");
     if (!eventName) return;
-    const href = target.getAttribute("href") || "";
+    const rawHref = target.getAttribute("href") || "";
+    let href = rawHref;
+    try {
+      const parsed = new URL(rawHref, window.location.origin);
+      href = parsed.pathname;
+    } catch {}
     const payload = { event: "marketing_click", marketing_event: eventName, href };
     if (Array.isArray(window.dataLayer)) {
       window.dataLayer.push(payload);

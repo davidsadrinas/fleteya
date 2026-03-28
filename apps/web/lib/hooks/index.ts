@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase-client";
 import { useTrackingStore } from "@/lib/stores";
 
@@ -35,7 +36,7 @@ export function useSupabaseQuery<T>(
 
 // Auth session hook
 export function useSession() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function useRealtimeTracking(shipmentId: string | null) {
           filter: `shipment_id=eq.${shipmentId}`,
         },
         (payload) => {
-          const point = payload.new as any;
+          const point = payload.new as { location?: string | null };
           // PostGIS geography returns WKT, extract lat/lng
           if (point.location) {
             // Simple extraction from POINT(lng lat) format
@@ -109,7 +110,8 @@ export function useRealtimeShipmentStatus(shipmentId: string | null) {
           filter: `id=eq.${shipmentId}`,
         },
         (payload) => {
-          setStatus((payload.new as any).status);
+          const next = (payload.new as { status?: string | null }).status;
+          if (next) setStatus(next);
         }
       )
       .subscribe();
@@ -126,6 +128,7 @@ export function useRealtimeShipmentStatus(shipmentId: string | null) {
 export function useShareLocation(shipmentId: string | null) {
   const [sharing, setSharing] = useState(false);
   const watchIdRef = useRef<number | null>(null);
+  const lastSentAtRef = useRef(0);
 
   const stop = useCallback(() => {
     if (watchIdRef.current !== null) {
@@ -142,6 +145,9 @@ export function useShareLocation(shipmentId: string | null) {
 
     const watchId = navigator.geolocation.watchPosition(
       async (pos) => {
+        const now = Date.now();
+        if (now - lastSentAtRef.current < 5000) return;
+        lastSentAtRef.current = now;
         await supabase.from("tracking_points").insert({
           shipment_id: shipmentId,
           location: `POINT(${pos.coords.longitude} ${pos.coords.latitude})`,

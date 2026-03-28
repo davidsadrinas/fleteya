@@ -6,11 +6,44 @@ import { Suspense, useState } from "react";
 import { isFacebookLoginEnabled } from "@/lib/config/auth-features";
 import { createClient } from "@/lib/supabase-client";
 
+function normalizeBaseUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (!trimmed) return null;
+  return trimmed;
+}
+
+function isLocalhostUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "0.0.0.0"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getCallbackUrl(next: string): string {
-  const base =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const envBase = normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL);
+  let base = envBase ?? "";
+
+  if (typeof window !== "undefined") {
+    const browserBase = window.location.origin.replace(/\/$/, "");
+    if (envBase && !isLocalhostUrl(envBase) && isLocalhostUrl(browserBase)) {
+      // If frontend runs from localhost but env points to prod/staging, use env for auth redirects.
+      base = envBase;
+    } else {
+      base = browserBase;
+    }
+  }
+
+  if (!base) {
+    throw new Error("Missing NEXT_PUBLIC_APP_URL for auth callback redirect.");
+  }
+
   const n = next.startsWith("/") ? next : "/dashboard";
   return `${base}/auth/callback?next=${encodeURIComponent(n)}`;
 }
@@ -77,7 +110,7 @@ function LoginForm() {
       <div className="w-full max-w-md min-w-0">
         <Link href="/" className="inline-flex items-center gap-1 mb-10">
           <span className="text-3xl font-display font-extrabold text-fy-text">flete</span>
-          <span className="text-3xl font-display font-extrabold text-brand-amber">ya</span>
+          <span className="text-3xl font-display font-extrabold text-brand-coral">ya</span>
         </Link>
 
         <h1 className="text-2xl font-display font-bold text-fy-text mb-2">Ingresar</h1>

@@ -11,6 +11,37 @@ function parseStage(value: unknown): EvidenceStage | null {
   return value === "pickup" || value === "delivery" ? value : null;
 }
 
+function isValidEvidenceReference(value: string): boolean {
+  if (value.includes("..") || value.startsWith("/")) return false;
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }
+  return value.length > 3;
+}
+
+function isExpectedShipmentPath(value: string, shipmentId: string): boolean {
+  if (value.startsWith("http://") || value.startsWith("https://")) return true;
+  return value.startsWith(`${shipmentId}/`);
+}
+
+function extractPathFromReference(value: string): string {
+  if (!(value.startsWith("http://") || value.startsWith("https://"))) return value;
+  try {
+    const parsed = new URL(value);
+    const marker = "/shipment-evidence/";
+    const index = parsed.pathname.indexOf(marker);
+    if (index === -1) return value;
+    return decodeURIComponent(parsed.pathname.slice(index + marker.length));
+  } catch {
+    return value;
+  }
+}
+
 export async function GET(_req: NextRequest, context: RouteContext) {
   const { id: shipmentId } = await context.params;
   const supabase = createServerSupabase();
@@ -42,7 +73,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const ip = getRequesterIp(req.headers);
-  const rate = enforceRateLimit({
+  const rate = await enforceRateLimit({
     key: `evidence:${shipmentId}:${user.id}:${ip}`,
     max: 30,
     windowMs: 60_000,
@@ -69,6 +100,16 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
   if (!stage) return NextResponse.json({ error: "Etapa inválida" }, { status: 400 });
   if (!fileUrl) return NextResponse.json({ error: "fileUrl requerido" }, { status: 400 });
+  if (!isValidEvidenceReference(fileUrl)) {
+    return NextResponse.json({ error: "fileUrl inválido" }, { status: 400 });
+  }
+  const normalizedPath = extractPathFromReference(fileUrl);
+  if (!isExpectedShipmentPath(normalizedPath, shipmentId)) {
+    return NextResponse.json({ error: "Evidencia fuera del envío" }, { status: 400 });
+  }
+  if (note && note.length > 500) {
+    return NextResponse.json({ error: "Nota demasiado larga" }, { status: 400 });
+  }
 
   const { data, error } = await supabase
     .from("shipment_evidence")
@@ -76,7 +117,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       shipment_id: shipmentId,
       uploaded_by: user.id,
       stage,
-      file_url: fileUrl,
+      file_url: normalizedPath,
       note,
     })
     .select("id, shipment_id, uploaded_by, stage, file_url, note, created_at")

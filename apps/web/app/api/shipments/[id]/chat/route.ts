@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
   if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const ip = getRequesterIp(req.headers);
-  const rate = enforceRateLimit({
+  const rate = await enforceRateLimit({
     key: `chat:${shipmentId}:${user.id}:${ip}`,
     max: 20,
     windowMs: 60_000,

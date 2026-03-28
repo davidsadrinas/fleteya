@@ -16,6 +16,7 @@ export default function ShipmentPage() {
   const { step, setStep, data, updateData, addLeg, removeLeg, updateLeg, reset } = useShipmentWizard();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [acarreoReason, setAcarreoReason] = useState("averia");
 
   const currentStep = (step > 3 ? 3 : step) as WizardStep;
   const progressPct = ((currentStep + 1) / 4) * 100;
@@ -67,7 +68,12 @@ export default function ShipmentPage() {
         | "camion"
         | "grua"
         | "atmosferico",
-      scheduledAt: new Date().toISOString(),
+      scheduledAt:
+        data.when === "Ahora"
+          ? new Date().toISOString()
+          : data.when === "Hoy"
+          ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       legs: legsPayload,
     };
     const parsed = createShipmentSchema.safeParse(payload);
@@ -160,26 +166,61 @@ export default function ShipmentPage() {
 
       {currentStep === 1 ? (
         <section className="space-y-3">
-          <select
-            className="input"
-            value={data.type || "mudanza"}
-            onChange={(e) => updateData({ type: e.target.value })}
-          >
-            <option value="mudanza">Mudanza</option>
-            <option value="mercaderia">Mercadería</option>
-            <option value="materiales">Materiales</option>
-            <option value="electrodomesticos">Electrodomésticos</option>
-            <option value="muebles">Muebles</option>
-            <option value="acarreo_vehiculo">Acarreo de vehículo</option>
-            <option value="limpieza_atmosferico">Limpieza/Atmosférico</option>
-            <option value="residuos">Residuos</option>
-          </select>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              "mudanza",
+              "mercaderia",
+              "materiales",
+              "electrodomesticos",
+              "muebles",
+              "acarreo_vehiculo",
+              "limpieza_atmosferico",
+              "residuos",
+            ].map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={`rounded-lg border px-2 py-2 text-xs font-semibold capitalize ${
+                  (data.type || "mudanza") === option
+                    ? "border-brand-teal-light bg-brand-teal/10 text-brand-teal-light"
+                    : "border-fy-border text-fy-soft"
+                }`}
+                onClick={() => updateData({ type: option })}
+              >
+                {option.replaceAll("_", " ")}
+              </button>
+            ))}
+          </div>
           <textarea
             className="input min-h-24"
             placeholder="Descripción de la carga"
             value={data.description}
             onChange={(e) => updateData({ description: e.target.value })}
           />
+          {(data.type || "mudanza") === "acarreo_vehiculo" ? (
+            <div className="rounded-lg border border-fy-border bg-brand-card/40 p-3">
+              <p className="text-xs font-semibold text-fy-text mb-2">Detalle de acarreo</p>
+              <select
+                className="input"
+                value={acarreoReason}
+                onChange={(e) => setAcarreoReason(e.target.value)}
+              >
+                <option value="averia">Avería</option>
+                <option value="compraventa">Compraventa</option>
+                <option value="traslado">Traslado</option>
+                <option value="otro">Otro</option>
+              </select>
+              <p className="text-[11px] text-fy-dim mt-2">
+                Motivo seleccionado: {acarreoReason}. El fletero verá este contexto en la postulación.
+              </p>
+            </div>
+          ) : null}
+          {(data.type || "mudanza") === "limpieza_atmosferico" ||
+          (data.type || "mudanza") === "residuos" ? (
+            <p className="rounded-lg border border-brand-amber/30 bg-brand-amber/10 px-3 py-2 text-xs text-brand-amber">
+              Para este servicio puede requerirse certificación específica y validación documental del fletero.
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <select
               className="input"
@@ -204,6 +245,44 @@ export default function ShipmentPage() {
               <option value="atmosferico">Atmosférico</option>
             </select>
           </div>
+          <div>
+            <p className="text-xs text-fy-dim mb-2">Ayudantes</p>
+            <div className="grid grid-cols-4 gap-2">
+              {[0, 1, 2, 3].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => updateData({ helpers: count })}
+                  className={`rounded-lg border py-2 text-sm font-semibold ${
+                    (data.helpers ?? 0) === count
+                      ? "border-brand-teal-light bg-brand-teal/10 text-brand-teal-light"
+                      : "border-fy-border text-fy-soft"
+                  }`}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-fy-dim mb-2">Cuándo retirar</p>
+            <div className="grid grid-cols-3 gap-2">
+              {["Ahora", "Hoy", "Programar"].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => updateData({ when: option })}
+                  className={`rounded-lg border py-2 text-xs font-semibold ${
+                    (data.when || "Hoy") === option
+                      ? "border-brand-teal-light bg-brand-teal/10 text-brand-teal-light"
+                      : "border-fy-border text-fy-soft"
+                  }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -223,6 +302,7 @@ export default function ShipmentPage() {
         <section className="space-y-3 rounded-xl border border-fy-border bg-brand-card/40 p-4">
           <p className="text-sm font-semibold text-fy-text">Resumen</p>
           <p className="text-xs text-fy-soft">Tramos: {legsPayload.length}</p>
+          <p className="text-xs text-fy-soft">Retiro: {data.when || "Hoy"}</p>
           <p className="text-xs text-fy-soft">
             Precio estimado:{" "}
             {estimatedDiscount > 0 ? (

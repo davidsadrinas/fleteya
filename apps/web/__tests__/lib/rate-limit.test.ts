@@ -9,11 +9,11 @@ describe("rate-limit utils", () => {
     expect(getRequesterIp(headers)).toBe("1.2.3.4");
   });
 
-  it("allows until max and blocks after max", () => {
+  it("allows until max and blocks after max", async () => {
     const key = `test-key-${Date.now()}`;
-    const a = enforceRateLimit({ key, max: 2, windowMs: 10_000 });
-    const b = enforceRateLimit({ key, max: 2, windowMs: 10_000 });
-    const c = enforceRateLimit({ key, max: 2, windowMs: 10_000 });
+    const a = await enforceRateLimit({ key, max: 2, windowMs: 10_000 });
+    const b = await enforceRateLimit({ key, max: 2, windowMs: 10_000 });
+    const c = await enforceRateLimit({ key, max: 2, windowMs: 10_000 });
 
     expect(a.ok).toBe(true);
     expect(b.ok).toBe(true);
@@ -21,15 +21,15 @@ describe("rate-limit utils", () => {
     expect(c.remaining).toBe(0);
   });
 
-  it("resets after window expires", () => {
+  it("resets after window expires", async () => {
     vi.useFakeTimers();
     const key = `window-reset-${Date.now()}`;
 
-    expect(enforceRateLimit({ key, max: 1, windowMs: 1_000 }).ok).toBe(true);
-    expect(enforceRateLimit({ key, max: 1, windowMs: 1_000 }).ok).toBe(false);
+    expect((await enforceRateLimit({ key, max: 1, windowMs: 1_000 })).ok).toBe(true);
+    expect((await enforceRateLimit({ key, max: 1, windowMs: 1_000 })).ok).toBe(false);
 
     vi.advanceTimersByTime(1_100);
-    expect(enforceRateLimit({ key, max: 1, windowMs: 1_000 }).ok).toBe(true);
+    expect((await enforceRateLimit({ key, max: 1, windowMs: 1_000 })).ok).toBe(true);
     vi.useRealTimers();
   });
 });

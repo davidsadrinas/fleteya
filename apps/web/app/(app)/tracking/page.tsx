@@ -6,6 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { STATUS_META } from "@shared/types";
 import { useRealtimeShipmentStatus, useRealtimeTracking, useShareLocation } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase-client";
+import { ChatPanel } from "@/components/tracking/chat-panel";
+import { EvidencePanel } from "@/components/tracking/evidence-panel";
+import { DisputesPanel } from "@/components/tracking/disputes-panel";
 
 type ChatMessage = {
   id: string;
@@ -29,6 +32,13 @@ type ShipmentDispute = {
   reason: string;
   status: string;
   created_at: string;
+};
+
+type ShipmentHeader = {
+  driverId: string | null;
+  driverName: string | null;
+  driverPhone: string | null;
+  canShareGps: boolean;
 };
 
 const STATUSES = Object.entries(STATUS_META).map(([key, value]) => ({
@@ -69,6 +79,12 @@ function TrackingContent() {
   const [disputeReason, setDisputeReason] = useState("Diferencia de precio");
   const [disputeDetail, setDisputeDetail] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [shipmentHeader, setShipmentHeader] = useState<ShipmentHeader>({
+    driverId: null,
+    driverName: null,
+    driverPhone: null,
+    canShareGps: false,
+  });
 
   const current = useMemo(() => STATUSES.find((s) => s.key === status) ?? STATUSES[0], [status]);
 
@@ -117,11 +133,59 @@ function TrackingContent() {
     }
   }, [shipmentId]);
 
+  const loadShipmentHeader = useCallback(async () => {
+    if (!shipmentId) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { data: shipment } = await supabase
+      .from("shipments")
+      .select("id,driver_id")
+      .eq("id", shipmentId)
+      .maybeSingle();
+    const driverId = (shipment as { driver_id?: string | null } | null)?.driver_id ?? null;
+    if (!driverId) {
+      setShipmentHeader({
+        driverId: null,
+        driverName: null,
+        driverPhone: null,
+        canShareGps: false,
+      });
+      return;
+    }
+
+    const { data: driver } = await supabase
+      .from("drivers")
+      .select("id,user_id")
+      .eq("id", driverId)
+      .maybeSingle();
+    const driverUserId = (driver as { user_id?: string | null } | null)?.user_id ?? null;
+    let driverName: string | null = null;
+    let driverPhone: string | null = null;
+    if (driverUserId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name,phone")
+        .eq("id", driverUserId)
+        .maybeSingle();
+      driverName = (profile as { name?: string | null } | null)?.name ?? null;
+      driverPhone = (profile as { phone?: string | null } | null)?.phone ?? null;
+    }
+
+    setShipmentHeader({
+      driverId,
+      driverName,
+      driverPhone,
+      canShareGps: Boolean(user?.id && driverUserId && user.id === driverUserId),
+    });
+  }, [shipmentId, supabase]);
+
   useEffect(() => {
     if (!shipmentId) return;
     void loadChat();
     void loadEvidence();
     void loadDisputes();
+    void loadShipmentHeader();
 
     const channel = supabase
       .channel(`shipment-chat-${shipmentId}`)
@@ -141,7 +205,7 @@ function TrackingContent() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadChat, loadDisputes, loadEvidence, shipmentId, supabase]);
+  }, [loadChat, loadDisputes, loadEvidence, loadShipmentHeader, shipmentId, supabase]);
 
   const sendChat = async (message: string, quickTag?: string) => {
     try {
@@ -177,11 +241,10 @@ function TrackingContent() {
         setFeedback(uploadError.message);
         return;
       }
-      const publicUrl = supabase.storage.from("shipment-evidence").getPublicUrl(filePath).data.publicUrl;
       const res = await fetch(`/api/shipments/${shipmentId}/evidence`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage, fileUrl: publicUrl }),
+        body: JSON.stringify({ stage, fileUrl: filePath }),
       });
       if (!res.ok) {
         const json = await safeParseJson(res);
@@ -216,8 +279,46 @@ function TrackingContent() {
     }
   };
 
+  const openEvidence = async (pathOrUrl: string) => {
+    try {
+      if (!shipmentId) return;
+      const looksLikeUrl = pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://");
+      if (looksLikeUrl) {
+        window.open(pathOrUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const qs = new URLSearchParams({
+        bucket: "shipment-evidence",
+        path: pathOrUrl,
+        shipmentId,
+      });
+      const res = await fetch(`/api/documents/signed-url?${qs.toString()}`);
+      const json = await safeParseJson(res);
+      if (!res.ok) {
+        setFeedback((json?.error as string | undefined) ?? "No se pudo abrir la evidencia.");
+        return;
+      }
+      const signedUrl = (json?.signedUrl as string | undefined) ?? "";
+      if (!signedUrl) {
+        setFeedback("No se pudo abrir la evidencia.");
+        return;
+      }
+      window.open(signedUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      setFeedback("No se pudo abrir la evidencia.");
+    }
+  };
+
   return (
     <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0">
+      {!shipmentId ? (
+        <div className="rounded-xl border border-brand-error/30 bg-brand-error/10 p-3 mb-4">
+          <p className="text-sm text-brand-error font-semibold">Falta `shipmentId` para ver el tracking.</p>
+          <p className="text-xs text-fy-soft mt-1">
+            Abrí esta pantalla desde un envío activo o usando `/tracking?shipmentId=...`.
+          </p>
+        </div>
+      ) : null}
       <div className="text-center mb-6">
         <div className="text-4xl mb-3">📍</div>
         <h2 className="text-lg font-display font-bold mb-2">Tracking en vivo</h2>
@@ -270,20 +371,34 @@ function TrackingContent() {
         <p className="text-xs text-fy-soft leading-relaxed mb-3">
           Shipment: <span className="text-fy-text font-mono">{shipmentId ?? "sin id"}</span>
         </p>
-        <button
-          type="button"
-          className="w-full rounded-lg border border-brand-teal/30 bg-brand-teal/10 py-2 text-sm font-semibold text-brand-teal-light"
-          onClick={async () => {
-            if (sharing) {
-              stop();
-              return;
-            }
-            await start();
-            setEta((x) => Math.max(5, x - 2));
-          }}
-        >
-          {sharing ? "⏹️ Detener ubicación compartida" : "Compartir ubicación (fletero)"}
-        </button>
+        {shipmentHeader.canShareGps ? (
+          <>
+            <button
+              type="button"
+              className="w-full rounded-lg border border-brand-teal/30 bg-brand-teal/10 py-2 text-sm font-semibold text-brand-teal-light"
+              onClick={async () => {
+                if (sharing) {
+                  stop();
+                  return;
+                }
+                await start();
+                setEta((x) => Math.max(5, x - 2));
+              }}
+            >
+              {sharing ? "⏹️ Detener ubicación compartida" : "Compartir ubicación (fletero)"}
+            </button>
+            {sharing ? (
+              <p className="mt-2 text-xs text-brand-teal-light flex items-center gap-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-brand-teal-light animate-pulse-slow" />
+                📍 Compartiendo ubicación
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="rounded-lg border border-fy-border px-3 py-2 text-xs text-fy-dim">
+            El GPS en vivo lo comparte únicamente el fletero asignado.
+          </p>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-2">
           {[
             { label: "Llegué al origen", value: "at_origin" },
@@ -298,10 +413,17 @@ function TrackingContent() {
               className="rounded-md border border-fy-border px-2 py-1.5 text-[11px]"
               onClick={async () => {
                 if (!shipmentId) return;
-                await supabase
-                  .from("shipments")
-                  .update({ status: next.value, updated_at: new Date().toISOString() })
-                  .eq("id", shipmentId);
+                const res = await fetch(`/api/shipments/${shipmentId}/status`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: next.value }),
+                });
+                if (!res.ok) {
+                  const json = await safeParseJson(res);
+                  setFeedback(
+                    (json?.error as string | undefined) ?? "No se pudo actualizar el estado del envío."
+                  );
+                }
               }}
             >
               {next.label}
@@ -314,151 +436,50 @@ function TrackingContent() {
         <p className="text-sm font-semibold mb-2">Contacto del fletero</p>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-fy-text">Conductor asignado</p>
-            <p className="text-[11px] text-fy-dim">Rating 4.8 · Camioneta</p>
+            <p className="text-xs text-fy-text">
+              {shipmentHeader.driverName ? shipmentHeader.driverName : "Conductor asignado"}
+            </p>
+            <p className="text-[11px] text-fy-dim">
+              {shipmentHeader.driverPhone ? `Tel: ${shipmentHeader.driverPhone}` : "Datos en actualización"}
+            </p>
           </div>
           <div className="flex gap-2">
-            <button className="rounded-md border border-fy-border px-2.5 py-1.5 text-xs">Llamar</button>
+            {shipmentHeader.driverPhone ? (
+              <a
+                href={`tel:${shipmentHeader.driverPhone}`}
+                className="rounded-md border border-fy-border px-2.5 py-1.5 text-xs"
+              >
+                Llamar
+              </a>
+            ) : (
+              <button className="rounded-md border border-fy-border px-2.5 py-1.5 text-xs" disabled>
+                Llamar
+              </button>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-fy-border p-4 bg-brand-card/20 mt-4">
-        <p className="text-sm font-semibold mb-2">Chat in-app</p>
-        <div className="max-h-44 overflow-y-auto space-y-2 pr-1 mb-3">
-          {chatMessages.length ? (
-            chatMessages.map((msg) => (
-              <div key={msg.id} className="rounded-md border border-fy-border p-2">
-                <p className="text-xs text-fy-text">{msg.body}</p>
-                <p className="text-[10px] text-fy-dim">
-                  {new Date(msg.created_at).toLocaleTimeString("es-AR")}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs text-fy-dim">Todavía no hay mensajes.</p>
-          )}
-        </div>
-        <div className="flex gap-2 mb-2">
-          {QUICK_MESSAGES.map((quick) => (
-            <button
-              key={quick}
-              type="button"
-              className="rounded-md border border-fy-border px-2 py-1 text-[11px] text-fy-soft"
-              onClick={() => void sendChat(quick, quick)}
-            >
-              {quick}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            value={chatText}
-            onChange={(e) => setChatText(e.target.value)}
-            placeholder="Escribí un mensaje"
-            className="input flex-1 text-xs py-2"
-          />
-          <button
-            type="button"
-            className="rounded-md border border-brand-teal/30 bg-brand-teal/10 px-3 py-1.5 text-xs"
-            onClick={() => void sendChat(chatText)}
-          >
-            Enviar
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-fy-border p-4 bg-brand-card/20 mt-4">
-        <p className="text-sm font-semibold mb-2">Evidencia pre / post carga</p>
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <label className="text-xs text-fy-soft">
-            Retiro (pre-carga)
-            <input
-              type="file"
-              accept="image/*"
-              className="block mt-1 text-[11px]"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void uploadEvidence("pickup", file);
-              }}
-            />
-          </label>
-          <label className="text-xs text-fy-soft">
-            Entrega (post-carga)
-            <input
-              type="file"
-              accept="image/*"
-              className="block mt-1 text-[11px]"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void uploadEvidence("delivery", file);
-              }}
-            />
-          </label>
-        </div>
-        <div className="space-y-2 max-h-32 overflow-y-auto">
-          {evidence.length ? (
-            evidence.map((item) => (
-              <a
-                key={item.id}
-                href={item.file_url}
-                target="_blank"
-                rel="noreferrer"
-                className="block rounded-md border border-fy-border p-2 text-xs"
-              >
-                {item.stage === "pickup" ? "Pre-carga" : "Post-carga"} ·{" "}
-                {new Date(item.created_at).toLocaleString("es-AR")}
-              </a>
-            ))
-          ) : (
-            <p className="text-xs text-fy-dim">Sin evidencia cargada.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-fy-border p-4 bg-brand-card/20 mt-4">
-        <p className="text-sm font-semibold mb-2">Reportar problema / disputa</p>
-        <div className="space-y-2">
-          <select
-            className="input text-xs"
-            value={disputeReason}
-            onChange={(e) => setDisputeReason(e.target.value)}
-          >
-            <option>Diferencia de precio</option>
-            <option>Carga dañada</option>
-            <option>Fletero no se presentó</option>
-            <option>Demora excesiva</option>
-            <option>Otro</option>
-          </select>
-          <textarea
-            className="input min-h-20 text-xs"
-            placeholder="Describí el problema"
-            value={disputeDetail}
-            onChange={(e) => setDisputeDetail(e.target.value)}
-          />
-          <button
-            type="button"
-            className="rounded-md border border-brand-error/40 bg-brand-error/10 px-3 py-1.5 text-xs text-brand-error"
-            onClick={() => void reportProblem()}
-          >
-            Reportar problema
-          </button>
-        </div>
-        <div className="mt-3 space-y-2 max-h-28 overflow-y-auto">
-          {disputes.length ? (
-            disputes.map((ticket) => (
-              <div key={ticket.id} className="rounded-md border border-fy-border p-2">
-                <p className="text-xs text-fy-text">{ticket.reason}</p>
-                <p className="text-[10px] text-fy-dim">
-                  {ticket.status} · {new Date(ticket.created_at).toLocaleString("es-AR")}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="text-xs text-fy-dim">Sin tickets activos.</p>
-          )}
-        </div>
-      </section>
+      <ChatPanel
+        messages={chatMessages}
+        chatText={chatText}
+        quickMessages={QUICK_MESSAGES}
+        onChatTextChange={setChatText}
+        onSendMessage={sendChat}
+      />
+      <EvidencePanel
+        evidence={evidence}
+        onUploadEvidence={uploadEvidence}
+        onOpenEvidence={openEvidence}
+      />
+      <DisputesPanel
+        disputes={disputes}
+        disputeReason={disputeReason}
+        disputeDetail={disputeDetail}
+        onReasonChange={setDisputeReason}
+        onDetailChange={setDisputeDetail}
+        onReport={reportProblem}
+      />
 
       {feedback ? (
         <p className="mt-4 rounded-md border border-brand-teal/30 bg-brand-teal/10 px-3 py-2 text-xs text-brand-teal-light">
@@ -466,14 +487,6 @@ function TrackingContent() {
         </p>
       ) : null}
 
-      <section className="rounded-xl border border-fy-border p-4 bg-brand-card/20 mt-4">
-        <p className="text-sm font-semibold mb-2">Backlog Marketplace 2026</p>
-        <ul className="text-xs text-fy-soft space-y-1.5">
-          <li>• Fase 1: Chat + Evidencia + Disputas + Pricing por ruta real</li>
-          <li>• Fase 2: Cotización sin login + Push inteligente + Recurrencia B2B</li>
-          <li>• Fase 3: Offline-first + Rate limiting completo + Observabilidad</li>
-        </ul>
-      </section>
     </div>
   );
 }
