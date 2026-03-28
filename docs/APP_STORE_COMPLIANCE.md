@@ -23,11 +23,19 @@ La guía oficial es [App Store Review Guidelines](https://developer.apple.com/ap
 
 ## Checklist antes de enviar
 
-- [ ] Build estable: flujos críticos probados en dispositivo físico iOS.
-- [ ] Sin placeholders obvios (“lorem”, “TODO”, botones que no hacen nada) en build de producción.
-- [ ] Metadata en español claro, sin buzzwords de IA.
-- [ ] Privacy Nutrition completado según datos que **realmente** recolecta la app (ubicación, identificadores, etc.).
-- [ ] `App Privacy` y política alineados con Supabase, mapas, notificaciones y cualquier analytics.
+### Estado de implementación en repositorio
+
+- [x] Sin copy visible orientado a “app de IA”.
+- [x] Flujos críticos implementados (auth, onboarding, envío, tracking, perfil y settings).
+- [x] Sin placeholders de roadmap en pantallas principales de producción.
+- [x] Permisos y textos base definidos en `app.json` (ubicación, cámara, fotos).
+
+### Pendientes operativos de publicación (App Store Connect)
+
+- [ ] Test final en dispositivo físico iOS sobre build candidata.
+- [ ] Metadata final (capturas, descripción, keywords) validada por producto.
+- [ ] Privacy Nutrition completado en App Store Connect.
+- [ ] Revisión final de `App Privacy` + policy URLs públicas antes de submit.
 
 ## Desarrollo interno (Cursor, Claude, etc.)
 

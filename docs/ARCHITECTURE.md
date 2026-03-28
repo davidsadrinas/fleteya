@@ -38,7 +38,7 @@ Los Route Groups `(marketing)` y `(app)` NO afectan la URL.
 ## Auth Flow
 
 ```
-[Usuario] → Login (Google/FB/IG/Email)
+[Usuario] → Login (Google/Email; Facebook opcional por flag)
     ↓
 [Supabase Auth] → Crea sesión + JWT
     ↓
@@ -50,7 +50,7 @@ Los Route Groups `(marketing)` y `(app)` NO afectan la URL.
 ```
 
 Supabase Auth maneja:
-- OAuth con Google, Facebook
+- OAuth con Google (Facebook opcional por feature flag)
 - Magic links por email
 - Session management con cookies (SSR)
 - JWT refresh automático
@@ -153,7 +153,6 @@ El motor de matching para viajes de retorno:
 
 ## Monitoreo
 
-- **Errores**: Sentry (web + mobile)
-- **Analytics**: Plausible (web) + Expo Analytics (mobile)
-- **Logs**: Vercel logs (web) + Supabase logs (DB)
-- **Uptime**: Vercel status + Supabase health checks
+- **Eventos de marketing**: `data-marketing-event` + `window.dataLayer` en landing web.
+- **Logs de plataforma**: Vercel logs (web) + Supabase logs (DB).
+- **Salud operativa**: build/lint/tests en CI local y verificación de deploy con checklist Vercel/Supabase.
