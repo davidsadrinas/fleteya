@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthSync } from "@/components/auth-sync";
 import { OnboardingGate } from "@/components/onboarding-gate";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 
 export const metadata: Metadata = {
   robots: {
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthSync>
+      <AnalyticsProvider>
       <OnboardingGate>
         <div className="min-h-dvh min-h-[100dvh] flex flex-col lg:flex-row w-full mx-auto bg-brand-dark">
           {/* Desktop sidebar — hidden on mobile */}
@@ -58,7 +59,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <header className="flex lg:hidden px-4 sm:px-5 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-fy-border items-center justify-between shrink-0">
               <span className="text-lg sm:text-xl font-display font-black gradient-text">FleteYa</span>
               <div className="flex items-center gap-2">
-                <ThemeToggle />
                 <Link
                   href="/settings"
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center text-fy-dim text-sm bg-brand-card border border-fy-border rounded-lg px-3"
@@ -71,7 +71,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop header bar */}
             <header className="hidden lg:flex px-6 py-3 border-b border-fy-border items-center justify-end shrink-0 gap-3">
-              <ThemeToggle />
             </header>
 
             <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-0">
@@ -99,6 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </OnboardingGate>
+      </AnalyticsProvider>
     </AuthSync>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { useShipmentWizard, useThemeStore, useAuthStore, useTrackingStore } from "@/lib/stores";
+import { useShipmentWizard, useAuthStore, useTrackingStore } from "@/lib/stores";
 
 describe("useShipmentWizard", () => {
   beforeEach(() => {
@@ -56,23 +56,6 @@ describe("useShipmentWizard", () => {
     const state = useShipmentWizard.getState();
     expect(state.step).toBe(0);
     expect(state.data.type).toBe("");
-  });
-});
-
-describe("useThemeStore", () => {
-  it("defaults to system mode", () => {
-    expect(useThemeStore.getState().mode).toBe("system");
-  });
-
-  it("sets dark mode", () => {
-    useThemeStore.getState().setMode("dark");
-    expect(useThemeStore.getState().mode).toBe("dark");
-    expect(useThemeStore.getState().resolved).toBe("dark");
-  });
-
-  it("sets light mode", () => {
-    useThemeStore.getState().setMode("light");
-    expect(useThemeStore.getState().resolved).toBe("light");
   });
 });
 

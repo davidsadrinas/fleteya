@@ -2,8 +2,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSession, useSupabaseQuery } from "@/lib/hooks";
+import { useShipmentWizard } from "@/lib/stores";
+import { useRouter } from "next/navigation";
 
 type ProfileRow = { id: string; name: string | null };
 type ShipmentRow = {
@@ -13,6 +15,7 @@ type ShipmentRow = {
   final_price: number | null;
   is_backhaul: boolean | null;
   created_at: string;
+  driver_id: string | null;
 };
 
 export default function DashboardPage() {
@@ -28,10 +31,40 @@ export default function DashboardPage() {
     Boolean(user?.id)
   );
 
+  const router = useRouter();
+  const { updateData, reset: resetWizard } = useShipmentWizard();
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
   const profileName = profiles?.[0]?.name?.trim() || user?.email?.split("@")[0] || "Hola";
   const activeShipment = (shipments ?? []).find(
     (s) => s.status !== "delivered" && s.status !== "cancelled"
   );
+  const recentShipments = useMemo(
+    () =>
+      (shipments ?? [])
+        .filter((s) => s.status === "delivered" || s.status === "cancelled")
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5),
+    [shipments]
+  );
+
+  const repeatShipment = useCallback(
+    (s: ShipmentRow) => {
+      resetWizard();
+      updateData({ type: s.type ?? "mudanza" });
+      router.push("/shipment");
+    },
+    [resetWizard, updateData, router]
+  );
+
+  const toggleFavorite = useCallback((driverId: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(driverId)) next.delete(driverId);
+      else next.add(driverId);
+      return next;
+    });
+  }, []);
   const backhaulTrips = useMemo(
     () =>
       (shipments ?? [])
@@ -186,9 +219,68 @@ export default function DashboardPage() {
         </p>
       )}
 
+      <div className="mt-6 mb-4">
+        <h3 className="text-sm font-display font-bold mb-3">Envios recientes</h3>
+        {recentShipments.length > 0 ? (
+          <div className="space-y-2">
+            {recentShipments.map((s) => (
+              <div key={s.id} className="rounded-xl border border-fy-border bg-brand-card/30 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-fy-text capitalize">
+                      {(s.type ?? "envio").replaceAll("_", " ")}
+                    </span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        s.status === "delivered"
+                          ? "bg-brand-teal/15 text-brand-teal-light"
+                          : "bg-brand-error/15 text-brand-error"
+                      }`}
+                    >
+                      {s.status === "delivered" ? "Entregado" : "Cancelado"}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-fy-dim">
+                    {new Date(s.created_at).toLocaleDateString("es-AR")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-brand-amber font-bold">
+                    {s.final_price ? `$${Number(s.final_price).toLocaleString("es-AR")}` : "—"}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {s.driver_id && (
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(s.driver_id!)}
+                        className="text-sm"
+                        title={favorites.has(s.driver_id) ? "Quitar de favoritos" : "Marcar como favorito"}
+                      >
+                        {favorites.has(s.driver_id) ? "⭐" : "☆"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => repeatShipment(s)}
+                      className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 px-3 py-1 text-xs font-semibold text-brand-teal-light"
+                    >
+                      Repetir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-fy-dim rounded-xl border border-fy-border bg-brand-card/30 p-3">
+            Tus envios completados van a aparecer aca. Desde ahi podes repetir un envio con un tap.
+          </p>
+        )}
+      </div>
+
       <Link
         href="/profile"
-        className="mt-6 flex items-center gap-3 p-3 rounded-xl border border-fy-border bg-brand-surface/30 text-sm text-fy-soft hover:border-brand-teal/30 transition-colors"
+        className="mt-2 flex items-center gap-3 p-3 rounded-xl border border-fy-border bg-brand-surface/30 text-sm text-fy-soft hover:border-brand-teal/30 transition-colors"
       >
         <span className="text-lg">◉</span>
         <span>Perfil, documentación (fleteros) y datos de cuenta</span>

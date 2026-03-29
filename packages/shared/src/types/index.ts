@@ -304,3 +304,85 @@ export const COMMISSION = {
   CHAIN_DISCOUNTS: [0, 0.15, 0.27, 0.39, 0.45], // per leg index
   CIRCUIT_BONUS: 0.08,
 };
+
+// Identity Verification
+export type IdentityVerificationStatus = "pending" | "verified" | "rejected" | "error";
+
+export interface IdentityVerification {
+  id: string;
+  driverId: string;
+  provider: string;
+  documentType: "dni" | "license";
+  documentNumber: string;
+  status: IdentityVerificationStatus;
+  confidence: number;
+  rejectionReason?: string;
+  verifiedAt?: string;
+  createdAt: string;
+}
+
+// OCR Extraction
+export interface OcrExtraction {
+  id: string;
+  driverId: string;
+  documentType: string;
+  rawText?: string;
+  fields: Record<string, string | null>;
+  confidence: number;
+  createdAt: string;
+}
+
+// Invoice (AFIP)
+export type InvoiceType = "factura_b" | "factura_c" | "nota_credito_b" | "nota_credito_c";
+export type InvoiceStatus = "pending" | "issued" | "cancelled" | "error";
+
+export interface Invoice {
+  id: string;
+  paymentId: string;
+  shipmentId: string;
+  invoiceType: InvoiceType;
+  status: InvoiceStatus;
+  puntoVenta: number;
+  numeroComprobante?: number;
+  cae?: string;
+  caeVencimiento?: string;
+  fechaEmision: string;
+  total: number;
+  neto: number;
+  iva: number;
+  receptorTipoDoc: number;
+  receptorNroDoc: string;
+  receptorNombre?: string;
+  createdAt: string;
+}
+
+// Cargo Insurance
+export type CargoInsuranceStatus = "quoted" | "active" | "claimed" | "expired" | "cancelled";
+
+export interface CargoInsurancePolicy {
+  id: string;
+  shipmentId: string;
+  provider: string;
+  policyNumber?: string;
+  status: CargoInsuranceStatus;
+  declaredValue: number;
+  premium: number;
+  deductible: number;
+  coverageType: string;
+  createdAt: string;
+}
+
+// Notification Log
+export type NotificationChannel = "email" | "sms" | "whatsapp" | "push";
+
+export interface NotificationLogEntry {
+  id: string;
+  userId: string;
+  channel: NotificationChannel;
+  eventType: string;
+  recipient: string;
+  status: "sent" | "failed" | "skipped";
+  provider?: string;
+  error?: string;
+  createdAt: string;
+}

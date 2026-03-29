@@ -4,6 +4,10 @@ import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 import { MercadoPagoConfig, Payment as MPPayment } from "mercadopago";
 import { createHmac } from "crypto";
 import { PAYMENT_RELEASE_HOURS } from "@shared/constants";
+import { emitInvoice, isBillingConfigured } from "@/lib/billing";
+import { notifyUser } from "@/lib/notifications";
+import { shipmentConfirmedEmail, paymentReceiptEmail } from "@/lib/email/templates";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 function verifyWebhookSignature(
   req: NextRequest,
@@ -129,6 +133,82 @@ export async function POST(req: NextRequest) {
         .update({ status: "accepted", updated_at: new Date().toISOString() })
         .eq("id", externalRef)
         .eq("status", "pending");
+
+      // --- AFIP: emit invoice ---
+      let cae: string | undefined;
+      if (isBillingConfigured()) {
+        const invoice = await emitInvoice({
+          paymentId: String(paymentInfo.id),
+          shipmentId: externalRef,
+          amount: paymentInfo.transaction_amount ?? 0,
+        });
+        if (invoice.success) {
+          await admin.from("invoices").insert({
+            payment_id: externalRef, // will be updated once payment row has id
+            shipment_id: externalRef,
+            invoice_type: "factura_c",
+            status: "issued",
+            punto_venta: 1,
+            numero_comprobante: invoice.numeroComprobante,
+            cae: invoice.cae,
+            cae_vencimiento: invoice.caeVencimiento,
+            total: paymentInfo.transaction_amount ?? 0,
+            neto: paymentInfo.transaction_amount ?? 0,
+          });
+          cae = invoice.cae;
+        }
+      }
+
+      // --- Notifications: confirm to client ---
+      const { data: shipment } = await admin
+        .from("shipments")
+        .select("client_id, final_price")
+        .eq("id", externalRef)
+        .maybeSingle();
+      if (shipment) {
+        const { data: profile } = await admin
+          .from("profiles")
+          .select("name, email, phone")
+          .eq("id", shipment.client_id)
+          .maybeSingle();
+        if (profile) {
+          const confirmed = shipmentConfirmedEmail({
+            clientName: profile.name || "Cliente",
+            shipmentId: externalRef,
+            finalPrice: shipment.final_price ?? 0,
+          });
+          const receipt = paymentReceiptEmail({
+            clientName: profile.name || "Cliente",
+            shipmentId: externalRef,
+            amount: paymentInfo.transaction_amount ?? 0,
+            cae,
+          });
+          void notifyUser({
+            userId: shipment.client_id,
+            eventType: "shipment_confirmed",
+            email: profile.email ? { to: profile.email, ...confirmed } : undefined,
+            whatsapp: profile.phone
+              ? { to: profile.phone, templateName: "shipment_confirmed", parameters: [profile.name || "Cliente", externalRef.slice(0, 8), String(shipment.final_price ?? 0)] }
+              : undefined,
+            push: { title: confirmed.subject, body: `Pago recibido por $${(shipment.final_price ?? 0).toLocaleString("es-AR")}` },
+          });
+          // Send receipt as separate email
+          if (profile.email) {
+            void notifyUser({
+              userId: shipment.client_id,
+              eventType: "payment_receipt",
+              email: { to: profile.email, ...receipt },
+            });
+          }
+        }
+      }
+
+      // --- Analytics ---
+      void trackServerEvent(shipment?.client_id ?? "unknown", "payment_completed", {
+        amount: paymentInfo.transaction_amount,
+        paymentType: paymentInfo.payment_type_id,
+        shipmentId: externalRef,
+      });
     }
   } catch (err) {
     console.error("Webhook processing error:", err);

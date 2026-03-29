@@ -44,23 +44,13 @@ function mockChain(data: unknown, error: unknown = null) {
 }
 
 function setupAdmin() {
-  getUser.mockResolvedValue({ data: { user: { id: "admin-1" } } });
-  supabaseMock.from.mockImplementation((table: string) => {
-    if (table === "profiles") {
-      return mockChain({ role: "admin" });
-    }
-    return mockChain([]);
-  });
+  getUser.mockResolvedValue({ data: { user: { id: "admin-1", email: "david.sadrinas@gmail.com" } } });
+  supabaseMock.from.mockReturnValue(mockChain([]));
 }
 
 function setupNonAdmin() {
-  getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
-  supabaseMock.from.mockImplementation((table: string) => {
-    if (table === "profiles") {
-      return mockChain({ role: "client" });
-    }
-    return mockChain([]);
-  });
+  getUser.mockResolvedValue({ data: { user: { id: "user-1", email: "other@example.com" } } });
+  supabaseMock.from.mockReturnValue(mockChain([]));
 }
 
 describe("GET /api/admin/stats", () => {

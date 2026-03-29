@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useShipmentWizard } from "@/lib/stores";
 import { createShipmentSchema } from "@/lib/schemas";
 import { apiFetch } from "@/lib/api-fetch";
+import { AddressInput, AddressInputProvider } from "@/components/address-input";
 
 type WizardStep = 0 | 1 | 2 | 3;
 
@@ -104,6 +105,7 @@ export default function ShipmentPage() {
   };
 
   return (
+    <AddressInputProvider>
     <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0">
       <div className="mb-4">
         <div className="flex items-center justify-between text-[11px] text-fy-dim mb-2">
@@ -122,26 +124,19 @@ export default function ShipmentPage() {
           {data.legs.map((leg, i) => (
             <div key={i} className="rounded-xl border border-fy-border bg-brand-card/40 p-3 space-y-2">
               <p className="text-xs text-fy-dim uppercase tracking-wide">Tramo {i + 1}</p>
-              <input
-                className="input"
+              <AddressInput
                 placeholder="Origen"
                 value={leg.from}
-                onChange={(e) =>
-                  updateLeg(i, "from", e.target.value, {
-                    lat: -34.6037 + i * 0.01,
-                    lng: -58.3816 + i * 0.01,
-                  })
+                disabled={i > 0}
+                onConfirm={(address, coords) =>
+                  updateLeg(i, "from", address, coords)
                 }
               />
-              <input
-                className="input"
+              <AddressInput
                 placeholder="Destino"
                 value={leg.to}
-                onChange={(e) =>
-                  updateLeg(i, "to", e.target.value, {
-                    lat: -34.6237 + i * 0.01,
-                    lng: -58.4016 + i * 0.01,
-                  })
+                onConfirm={(address, coords) =>
+                  updateLeg(i, "to", address, coords)
                 }
               />
               {i > 0 ? (
@@ -360,5 +355,6 @@ export default function ShipmentPage() {
         </Link>
       </div>
     </div>
+    </AddressInputProvider>
   );
 }

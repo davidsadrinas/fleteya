@@ -249,6 +249,38 @@ function ShipmentConfirmationContent() {
         </ul>
       </section>
 
+      <section className="rounded-xl border border-brand-teal/25 bg-brand-teal/5 p-4 mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-brand-teal/20 flex items-center justify-center text-lg">
+            🛡️
+          </div>
+          <div>
+            <h2 className="text-sm font-heading font-bold text-brand-teal-light">Envio protegido</h2>
+            <p className="text-[11px] text-fy-dim">Responsabilidad civil incluida</p>
+          </div>
+        </div>
+        <p className="text-xs text-fy-soft leading-relaxed">
+          Tu envio esta cubierto por el seguro de responsabilidad civil del fletero verificado.
+          En caso de incidentes, podes abrir un reclamo desde la seccion de tracking.
+        </p>
+      </section>
+
+      <section className="rounded-xl border border-brand-amber/25 bg-brand-amber/5 p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-brand-amber/20 flex items-center justify-center text-lg">
+            🕐
+          </div>
+          <div>
+            <h2 className="text-sm font-heading font-bold text-brand-amber">Tiempo estimado de llegada</h2>
+            <p className="text-xs text-fy-soft mt-0.5">
+              El fletero llega en aproximadamente{" "}
+              <span className="text-brand-amber font-bold">45 — 90 minutos</span>
+              {" "}dependiendo del tráfico y la distancia.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-xl border border-fy-border bg-brand-card/30 p-4 mb-4">
         <h2 className="text-xs font-heading font-bold text-brand-teal-light uppercase tracking-wide mb-2">
           Notificaciones enviadas

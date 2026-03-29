@@ -310,16 +310,41 @@ function TrackingContent() {
     }
   };
 
+  const ACTIVE_STATUSES = ["assigned", "en_route_to_pickup", "at_origin", "loading", "picked_up", "in_transit", "arriving"];
+  const isActive = shipmentId && ACTIVE_STATUSES.includes(status);
+
+  if (!shipmentId) {
+    return (
+      <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0 text-center">
+        <div className="text-5xl mb-4 mt-10">📍</div>
+        <h2 className="text-lg font-display font-bold mb-2">Tracking en vivo</h2>
+        <p className="text-fy-dim text-sm leading-relaxed mb-6">
+          No tenés envios activos en este momento.
+        </p>
+        <p className="text-xs text-fy-dim">
+          Cuando un envio esté en camino, vas a poder seguir al fletero en tiempo real desde acá.
+        </p>
+      </div>
+    );
+  }
+
+  if (!isActive) {
+    return (
+      <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0 text-center">
+        <div className="text-5xl mb-4 mt-10">📦</div>
+        <h2 className="text-lg font-display font-bold mb-2">Envio #{shipmentId.slice(0, 8)}</h2>
+        <p className="text-fy-dim text-sm leading-relaxed mb-3">
+          Estado: <span className="text-fy-text font-semibold">{current.label}</span>
+        </p>
+        <p className="text-xs text-fy-dim">
+          El mapa interactivo se activa cuando el fletero esté en camino. Mientras tanto, podes ver el estado del envio arriba.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 sm:px-5 py-5 pb-10 max-w-lg mx-auto min-w-0">
-      {!shipmentId ? (
-        <div className="rounded-xl border border-brand-error/30 bg-brand-error/10 p-3 mb-4">
-          <p className="text-sm text-brand-error font-semibold">Falta `shipmentId` para ver el tracking.</p>
-          <p className="text-xs text-fy-soft mt-1">
-            Abrí esta pantalla desde un envío activo o usando `/tracking?shipmentId=...`.
-          </p>
-        </div>
-      ) : null}
       <div className="text-center mb-6">
         <div className="text-4xl mb-3">📍</div>
         <h2 className="text-lg font-display font-bold mb-2">Tracking en vivo</h2>
@@ -430,6 +455,37 @@ function TrackingContent() {
               {next.label}
             </button>
           ))}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-brand-teal/20 bg-brand-teal/5 p-4 mb-4">
+        <p className="text-sm font-semibold mb-2">Compartir seguimiento</p>
+        <p className="text-xs text-fy-dim mb-3">
+          Enviá el link de tracking al destinatario para que siga el envio en tiempo real.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="flex-1 rounded-lg bg-[#25D366] text-white py-2 text-sm font-bold"
+            onClick={() => {
+              const url = `${window.location.origin}/t/${shipmentId}`;
+              const text = `Seguí mi envio de FleteYa en tiempo real: ${url}`;
+              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+            }}
+          >
+            Compartir por WhatsApp
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-fy-border px-3 py-2 text-sm"
+            onClick={() => {
+              const url = `${window.location.origin}/t/${shipmentId}`;
+              void navigator.clipboard.writeText(url);
+              setFeedback("Link de tracking copiado al portapapeles");
+            }}
+          >
+            Copiar link
+          </button>
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { createServiceRoleSupabase } from "@/lib/supabase/admin";
+
+const ADMIN_EMAIL = "david.sadrinas@gmail.com";
 
 export async function requireAdmin(
   supabase: SupabaseClient
@@ -9,15 +10,7 @@ export async function requireAdmin(
   } = await supabase.auth.getUser();
   if (!user) return { error: "No autorizado", status: 401, user: null };
 
-  // Use service role to verify admin status — avoids RLS dependency for authorization
-  const adminClient = createServiceRoleSupabase();
-  const { data: profile } = await adminClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile || profile.role !== "admin") {
+  if (user.email !== ADMIN_EMAIL) {
     return { error: "Acceso denegado", status: 403, user: null };
   }
 

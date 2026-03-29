@@ -2,7 +2,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useThemeStore } from "@/lib/stores";
 import { usePushNotifications } from "@/lib/hooks";
 import { apiFetch } from "@/lib/api-fetch";
 
@@ -65,9 +64,6 @@ type ReferralData = {
 };
 
 export default function SettingsPage() {
-  const mode = useThemeStore((s) => s.mode);
-  const resolved = useThemeStore((s) => s.resolved);
-  const setMode = useThemeStore((s) => s.setMode);
   const push = usePushNotifications();
 
   // Referral state
@@ -125,30 +121,6 @@ export default function SettingsPage() {
           Centro único para cuenta, avisos y pagos. Acá tenés una vista consolidada de tus opciones y políticas vigentes.
         </p>
       </div>
-
-      <section className="mb-6 rounded-2xl border border-fy-border bg-brand-card/40 p-4">
-        <h3 className="text-xs font-heading font-bold text-brand-coral uppercase tracking-wide mb-3">
-          Tema
-        </h3>
-        <p className="text-xs text-fy-dim mb-3">
-          Modo actual: <span className="text-fy-text">{mode}</span> · resuelto:{" "}
-          <span className="text-fy-text">{resolved}</span>
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          {(["light", "dark", "system"] as const).map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => setMode(opt)}
-              className={`rounded-lg border px-2 py-2 text-xs font-semibold ${
-                mode === opt ? "border-brand-teal-light bg-brand-teal/10 text-brand-teal-light" : "border-fy-border"
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      </section>
 
       <div className="space-y-6">
         {SECTIONS.map((sec) => (

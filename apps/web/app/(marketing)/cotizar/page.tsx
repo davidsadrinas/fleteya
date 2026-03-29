@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MarketingNavbar } from "@/components/marketing-navbar";
 import { apiFetch } from "@/lib/api-fetch";
@@ -33,6 +33,15 @@ export default function CotizarPage() {
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const updateLeg = (i: number, field: keyof QuoteLeg, value: string) => {
     const updated = [...legs];
@@ -186,7 +195,7 @@ export default function CotizarPage() {
                 )}
               </div>
 
-              <div className="space-y-2 mb-6">
+              <div className="space-y-2 mb-4">
                 {result.legs.map((leg, i) => (
                   <div key={i} className="flex justify-between text-sm py-2 border-b border-fy-border last:border-0">
                     <div className="text-fy-soft min-w-0 flex-1">
@@ -203,12 +212,59 @@ export default function CotizarPage() {
                 ))}
               </div>
 
+              <div className="flex items-center gap-2 mb-4 text-xs text-fy-soft">
+                <span className="w-5 h-5 rounded-full bg-brand-teal/20 flex items-center justify-center text-[10px]">🛡️</span>
+                Envio protegido con seguro de responsabilidad civil
+              </div>
+
+              {!emailSent ? (
+                <div className="rounded-xl border border-brand-amber/30 bg-brand-amber/5 p-4 mb-4">
+                  <p className="text-sm font-semibold text-brand-amber mb-1">
+                    Reserva este precio por 2 horas
+                  </p>
+                  <p className="text-xs text-fy-dim mb-3">
+                    Dejá tu email y te guardamos la cotizacion. Sin compromiso.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="input flex-1 !py-2"
+                    />
+                    <button
+                      type="button"
+                      className="rounded-lg bg-brand-amber text-brand-ink px-4 py-2 text-sm font-bold whitespace-nowrap"
+                      onClick={() => {
+                        if (email.includes("@")) {
+                          setEmailSent(true);
+                          setCountdown(7200);
+                        }
+                      }}
+                    >
+                      Reservar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-brand-teal/30 bg-brand-teal/5 p-4 mb-4 text-center">
+                  <p className="text-sm font-semibold text-brand-teal-light mb-1">Precio reservado ✓</p>
+                  <p className="text-xs text-fy-dim">
+                    Te enviamos la cotizacion a <span className="text-fy-text">{email}</span>.
+                    {countdown > 0 && (
+                      <> Valida por {Math.floor(countdown / 3600)}h {Math.floor((countdown % 3600) / 60)}m.</>
+                    )}
+                  </p>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link href="/login" className="btn-primary flex-1 text-center">
-                  Registrate para reservar
+                  Registrate y reserva ahora
                 </Link>
                 <Link href="/login" className="btn-secondary flex-1 text-center">
-                  Ya tenés cuenta? Iniciá sesión
+                  Ya tenés cuenta? Inicia sesion
                 </Link>
               </div>
             </div>

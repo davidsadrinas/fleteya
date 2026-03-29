@@ -1,47 +1,5 @@
 import { create } from "zustand";
 
-// Theme store (light/dark mode)
-type ThemeMode = "light" | "dark" | "system";
-
-interface ThemeStore {
-  mode: ThemeMode;
-  resolved: "light" | "dark";
-  setMode: (mode: ThemeMode) => void;
-}
-
-export const useThemeStore = create<ThemeStore>((set) => ({
-  mode: "system",
-  resolved: "light",
-  setMode: (mode) => {
-    const canUseMatchMedia =
-      typeof window !== "undefined" && typeof window.matchMedia === "function";
-    const resolved = mode === "system"
-      ? (canUseMatchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-      : mode;
-    set({ mode, resolved });
-  },
-}));
-
-if (typeof window !== "undefined") {
-  const saved = window.localStorage.getItem("fy-theme-mode");
-  const initialMode = saved === "light" || saved === "dark" || saved === "system" ? saved : "system";
-  useThemeStore.getState().setMode(initialMode);
-
-  if (typeof window.matchMedia === "function") {
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-      const state = useThemeStore.getState();
-      if (state.mode === "system") state.setMode("system");
-    });
-  }
-
-  useThemeStore.subscribe((state) => {
-    window.localStorage.setItem("fy-theme-mode", state.mode);
-    const root = document.documentElement;
-    if (state.resolved === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-  });
-}
-
 // Auth store
 interface AuthStore {
   user: {

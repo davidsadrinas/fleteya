@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
+import { createServiceRoleSupabase } from "@/lib/supabase/admin";
 import { canAccessShipment } from "@/lib/shipments/access";
+import { notifyUser } from "@/lib/notifications";
+import { shipmentDeliveredEmail } from "@/lib/email/templates";
+import { trackServerEvent } from "@/lib/analytics/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -71,6 +75,57 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     .update({ status: nextStatus, updated_at: new Date().toISOString() })
     .eq("id", shipmentId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // --- Notify client on delivery ---
+  if (nextStatus === "delivered") {
+    const admin = createServiceRoleSupabase();
+    const { data: fullShipment } = await admin
+      .from("shipments")
+      .select("client_id, driver_id, final_price")
+      .eq("id", shipmentId)
+      .maybeSingle();
+    if (fullShipment) {
+      const { data: clientProfile } = await admin
+        .from("profiles")
+        .select("name, email, phone")
+        .eq("id", fullShipment.client_id)
+        .maybeSingle();
+      let driverName = "Tu fletero";
+      if (fullShipment.driver_id) {
+        const { data: driverRow } = await admin
+          .from("drivers")
+          .select("user_id")
+          .eq("id", fullShipment.driver_id)
+          .maybeSingle();
+        if (driverRow) {
+          const { data: dp } = await admin
+            .from("profiles")
+            .select("name")
+            .eq("id", driverRow.user_id)
+            .maybeSingle();
+          if (dp?.name) driverName = dp.name;
+        }
+      }
+      if (clientProfile) {
+        const emailData = shipmentDeliveredEmail({
+          clientName: clientProfile.name || "Cliente",
+          shipmentId,
+          driverName,
+          finalPrice: fullShipment.final_price ?? 0,
+        });
+        void notifyUser({
+          userId: fullShipment.client_id,
+          eventType: "shipment_delivered",
+          email: clientProfile.email ? { to: clientProfile.email, ...emailData } : undefined,
+          whatsapp: clientProfile.phone
+            ? { to: clientProfile.phone, templateName: "shipment_delivered", parameters: [shipmentId.slice(0, 8), String(fullShipment.final_price ?? 0)] }
+            : undefined,
+          push: { title: "Envío entregado", body: `Tu envío #${shipmentId.slice(0, 8)} fue entregado por ${driverName}`, url: `/tracking?id=${shipmentId}` },
+        });
+      }
+      void trackServerEvent(fullShipment.client_id, "shipment_delivered", { shipmentId });
+    }
+  }
 
   return NextResponse.json({ ok: true, status: nextStatus });
 }

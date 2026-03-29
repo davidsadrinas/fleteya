@@ -3,6 +3,7 @@ import { createAnonSupabase } from "@/lib/supabase/admin";
 import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 import { COMMISSION } from "@shared/types";
 import { calcChainDiscount, calcDistanceKm } from "@shared/utils";
+import { calculateRoute } from "@/lib/routes";
 import { z } from "zod";
 
 const quoteLegSchema = z.object({
@@ -46,25 +47,42 @@ export async function POST(req: NextRequest) {
   const input = parsed.data;
 
   let totalBase = 0;
-  const legsWithPricing = input.legs.map((leg, i) => {
-    const distKm = calcDistanceKm(
-      leg.originLat,
-      leg.originLng,
-      leg.destLat,
-      leg.destLng
+  const legsWithPricing = [];
+  for (let i = 0; i < input.legs.length; i++) {
+    const leg = input.legs[i];
+
+    // Try real route distance first, fallback to Haversine * 1.3
+    let distKm: number;
+    let estimatedMinutes: number | undefined;
+    let polyline: string | undefined;
+    const realRoute = await calculateRoute(
+      { lat: leg.originLat, lng: leg.originLng },
+      { lat: leg.destLat, lng: leg.destLng }
     );
+    if (realRoute) {
+      distKm = realRoute.distanceKm;
+      estimatedMinutes = realRoute.durationMinutes;
+      polyline = realRoute.polyline;
+    } else {
+      const haversine = calcDistanceKm(leg.originLat, leg.originLng, leg.destLat, leg.destLng);
+      distKm = haversine * 1.3; // correction factor: real routes ~30% longer
+      estimatedMinutes = Math.ceil((distKm / 30) * 60); // ~30 km/h average in AMBA
+    }
+
     const basePrice = Math.round(3200 + distKm * 1800);
     const chainDiscount = calcChainDiscount(i, input.legs.length);
     const legPrice = Math.round(basePrice * (1 - chainDiscount));
     totalBase += basePrice;
-    return {
+    legsWithPricing.push({
       originAddress: leg.originAddress,
       destAddress: leg.destAddress,
       distanceKm: distKm,
+      estimatedMinutes,
+      polyline,
       price: legPrice,
       discount: Math.round(chainDiscount * 100),
-    };
-  });
+    });
+  }
 
   const totalFinal = legsWithPricing.reduce((s, l) => s + l.price, 0);
   const commission = Math.round(totalFinal * COMMISSION.BASE_RATE);
