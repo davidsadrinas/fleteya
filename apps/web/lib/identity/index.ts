@@ -1,18 +1,40 @@
+import { renaperAdapter } from "./adapters/renaper";
 import { nosisProvider } from "./providers/nosis";
-import type { IdentityProvider, VerificationRequest, VerificationResult } from "./types";
+import type {
+  IdentityVerificationAdapter,
+  IdentityVerificationRequest,
+  IdentityVerificationResult,
+} from "./types";
 
-const providers: Record<string, IdentityProvider> = {
+const providers: Record<string, IdentityVerificationAdapter> = {
+  renaper: renaperAdapter,
   nosis: nosisProvider,
 };
 
-function getProvider(): IdentityProvider | null {
-  const name = process.env.RENAPER_PROVIDER ?? "nosis";
+function resolveProviderName(): string {
+  const raw = process.env.RENAPER_PROVIDER?.trim().toLowerCase() ?? "";
+  if (raw === "nosis") return "renaper";
+  if (!raw) return "renaper";
+  return raw;
+}
+
+function getProvider(): IdentityVerificationAdapter | null {
+  const name = resolveProviderName();
   return providers[name] ?? null;
 }
 
+export function getIdentityVerificationAdapter(): IdentityVerificationAdapter | null {
+  return getProvider();
+}
+
+export function getIdentityProviderName(): string {
+  const provider = getProvider();
+  return provider?.name ?? resolveProviderName();
+}
+
 export async function verifyIdentity(
-  request: VerificationRequest
-): Promise<VerificationResult> {
+  request: IdentityVerificationRequest
+): Promise<IdentityVerificationResult> {
   const provider = getProvider();
 
   if (!provider) {
@@ -30,7 +52,11 @@ export async function verifyIdentity(
 }
 
 export function isIdentityConfigured(): boolean {
-  return !!process.env.RENAPER_API_KEY;
+  const provider = getProvider();
+  return Boolean(provider?.isConfigured());
 }
 
-export type { VerificationRequest, VerificationResult } from "./types";
+export type {
+  IdentityVerificationRequest,
+  IdentityVerificationResult,
+} from "./types";

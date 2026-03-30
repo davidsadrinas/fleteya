@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@afipsdk/afip.js": "^1.2.3",
     "@hookform/resolvers": "^3.3.0",
     "@next-auth/supabase-adapter": "^0.2.1",
     "@react-google-maps/api": "^2.19.0",
@@ -30,8 +31,10 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.0",
+    "resend": "^6.9.4",
     "sonner": "^1.4.0",
     "tailwind-merge": "^2.2.0",
+    "twilio": "^5.13.1",
     "use-places-autocomplete": "^4.0.1",
     "zod": "^3.22.0",
     "zustand": "^4.5.0"

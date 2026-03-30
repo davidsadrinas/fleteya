@@ -20,11 +20,15 @@ vi.mock("@/lib/rate-limit", () => ({
   getRequesterIp: () => "127.0.0.1",
 }));
 
-// Mock mercadopago — prevent real HTTP calls
-const mockMPGet = vi.fn();
-vi.mock("mercadopago", () => ({
-  MercadoPagoConfig: vi.fn(),
-  Payment: vi.fn().mockImplementation(() => ({ get: mockMPGet })),
+const mockGetPaymentById = vi.fn();
+vi.mock("@/lib/payments", () => ({
+  getPaymentAdapter: () => ({
+    name: "mercadopago",
+    isConfigured: () => true,
+    createPreference: vi.fn(),
+    getPaymentById: (...args: Parameters<typeof mockGetPaymentById>) =>
+      mockGetPaymentById(...args),
+  }),
 }));
 
 function mockUpdateChain(data: unknown = null, error: unknown = null) {
@@ -87,11 +91,13 @@ describe("POST /api/payments/webhook", () => {
     const body = makeWebhookBody("67890");
     const { ts, v1, requestId } = signRequest(body, WEBHOOK_SECRET);
 
-    mockMPGet.mockResolvedValue({
-      id: 67890,
+    mockGetPaymentById.mockResolvedValue({
+      id: "67890",
       status: "approved",
-      external_reference: "shipment-uuid-1",
-      payment_type_id: "credit_card",
+      externalReference: "shipment-uuid-1",
+      paymentTypeId: "credit_card",
+      amount: 10000,
+      raw: {},
     });
 
     supabaseMock.from.mockReturnValue(mockUpdateChain());
@@ -141,7 +147,7 @@ describe("POST /api/payments/webhook", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(mockMPGet).not.toHaveBeenCalled();
+    expect(mockGetPaymentById).not.toHaveBeenCalled();
   });
 
   it("handles missing body gracefully", async () => {

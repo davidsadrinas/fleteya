@@ -50,4 +50,31 @@ describe("API /documents/signed-url", () => {
     const res = await GET(req);
     expect(res.status).toBe(403);
   });
+
+  it("requires shipmentId for shipment-evidence bucket", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    const req = new NextRequest(
+      `http://localhost:3000/api/documents/signed-url?bucket=shipment-evidence&path=${uuid}/file.jpg`
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects encoded path traversal attempts", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    const req = new NextRequest(
+      `http://localhost:3000/api/documents/signed-url?bucket=shipment-evidence&path=${uuid}%2F..%2Fsecret.jpg&shipmentId=${uuid}`
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects unsupported buckets", async () => {
+    const uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    const req = new NextRequest(
+      `http://localhost:3000/api/documents/signed-url?bucket=public-files&path=${uuid}/file.jpg`
+    );
+    const res = await GET(req);
+    expect(res.status).toBe(400);
+  });
 });

@@ -1,26 +1,21 @@
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+import { posthogAnalyticsAdapter } from "./adapters/posthog";
+import type { AnalyticsAdapter } from "./types";
+
+const adapters: Record<string, AnalyticsAdapter> = {
+  posthog: posthogAnalyticsAdapter,
+};
+
+function getAnalyticsAdapter(): AnalyticsAdapter {
+  const provider = process.env.ANALYTICS_PROVIDER?.trim().toLowerCase() || "posthog";
+  return adapters[provider] ?? posthogAnalyticsAdapter;
+}
 
 export async function trackServerEvent(
   distinctId: string,
   event: string,
   properties?: Record<string, unknown>
 ): Promise<void> {
-  if (!POSTHOG_KEY) return;
-
-  try {
-    await fetch(`${POSTHOG_HOST}/capture/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: POSTHOG_KEY,
-        event,
-        distinct_id: distinctId,
-        properties: { ...properties, $lib: "fletaya-server" },
-        timestamp: new Date().toISOString(),
-      }),
-    });
-  } catch {
-    // fire and forget
-  }
+  const adapter = getAnalyticsAdapter();
+  if (!adapter.isConfigured()) return;
+  await adapter.trackEvent(distinctId, event, properties);
 }

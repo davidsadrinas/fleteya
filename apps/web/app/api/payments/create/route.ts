@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { createServiceRoleSupabase } from "@/lib/supabase/admin";
 import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
-import { MercadoPagoConfig, Preference } from "mercadopago";
+import { getPaymentAdapter } from "@/lib/payments";
+import { createPaymentPreferenceUseCase } from "@/lib/use-cases/payments/create-payment-preference";
 import { z } from "zod";
 
 const paymentSchema = z.object({ shipmentId: z.string().uuid() });
@@ -66,8 +67,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Ya existe un pago aprobado" }, { status: 409 });
   }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken) {
+  const paymentAdapter = getPaymentAdapter();
+  if (!paymentAdapter.isConfigured()) {
     return NextResponse.json(
       { error: "Configuración de pagos incompleta" },
       { status: 503 }
@@ -75,49 +76,36 @@ export async function POST(req: NextRequest) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const mpConfig = new MercadoPagoConfig({ accessToken });
-  const preference = new Preference(mpConfig);
 
   const finalPrice = Number(shipment.final_price);
   const commission = Number(shipment.commission);
-  const driverPayout = finalPrice - commission;
 
   try {
-    const result = await preference.create({
-      body: {
-        items: [
-          {
-            id: shipmentId,
-            title: `Flete #${shipmentId.slice(0, 8)}`,
-            quantity: 1,
-            unit_price: finalPrice,
-            currency_id: "ARS",
-          },
-        ],
-        back_urls: {
-          success: `${appUrl}/shipment/confirmation?id=${shipmentId}`,
-          failure: `${appUrl}/shipment?error=payment`,
-          pending: `${appUrl}/shipment?pending=true`,
-        },
-        notification_url: `${appUrl}/api/payments/webhook`,
-        external_reference: shipmentId,
-        auto_return: "approved",
-      },
-    });
-
-    // Insert payment record using service role
     const admin = createServiceRoleSupabase();
-    await admin.from("payments").insert({
-      shipment_id: shipmentId,
-      amount: finalPrice,
-      commission,
-      driver_payout: driverPayout,
-      status: "pending",
-      mercadopago_preference_id: result.id,
-    });
+    const result = await createPaymentPreferenceUseCase(
+      {
+        paymentAdapter,
+        persistPendingPayment: async (payment) => {
+          await admin.from("payments").insert({
+            shipment_id: payment.shipmentId,
+            amount: payment.amount,
+            commission: payment.commission,
+            driver_payout: payment.driverPayout,
+            status: "pending",
+            mercadopago_preference_id: payment.preferenceId,
+          });
+        },
+      },
+      {
+      shipmentId,
+      finalPrice,
+        commission,
+      appUrl,
+      }
+    );
 
     return NextResponse.json(
-      { preferenceId: result.id, initPoint: result.init_point },
+      { preferenceId: result.preferenceId, initPoint: result.initPoint },
       { status: 201 }
     );
   } catch (err) {

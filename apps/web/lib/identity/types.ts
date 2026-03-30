@@ -1,4 +1,4 @@
-export interface VerificationRequest {
+export interface IdentityVerificationRequest {
   documentType: "dni" | "license";
   documentNumber: string;
   fullName: string;
@@ -9,7 +9,7 @@ export interface VerificationRequest {
   selfieUrl?: string;
 }
 
-export interface VerificationResult {
+export interface IdentityVerificationResult {
   status: "verified" | "rejected" | "error";
   confidence: number;
   rejectionReason?: string;
@@ -22,7 +22,15 @@ export interface VerificationResult {
   };
 }
 
-export interface IdentityProvider {
+export interface IdentityVerificationAdapter {
   readonly name: string;
-  verify(request: VerificationRequest): Promise<VerificationResult>;
+  isConfigured(): boolean;
+  verify(
+    request: IdentityVerificationRequest
+  ): Promise<IdentityVerificationResult>;
 }
+
+// Backward-compatible aliases to avoid breaking current imports.
+export type VerificationRequest = IdentityVerificationRequest;
+export type VerificationResult = IdentityVerificationResult;
+export type IdentityProvider = IdentityVerificationAdapter;

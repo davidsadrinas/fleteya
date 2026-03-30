@@ -41,6 +41,19 @@ fletaya/
 | Hosting Mobile | Expo EAS | Build y publicacion |
 | Error Tracking | Sentry (opcional) | Monitoreo de errores |
 
+### Arquitectura SOLID de integraciones
+
+- Las rutas API dependen de **interfaces (puertos)** y no de SDKs concretos.
+- Cada proveedor externo vive en su **adapter** (patrón Ports & Adapters):
+  - `lib/payments/adapters/*` (ej. MercadoPago)
+  - `lib/identity/adapters/*` (ej. RENAPER)
+  - `lib/notifications/adapters/*` (email/sms/whatsapp/push)
+  - `lib/billing/adapters/*` (AFIP)
+  - `lib/analytics/adapters/*` (PostHog)
+  - `lib/error-reporting/adapters/*` (Sentry)
+- La selección de proveedor es por variables de entorno (`*_PROVIDER`), lo que permite cambiar implementación sin tocar la capa de aplicación.
+- Casos de uso en `lib/use-cases/*` concentran orquestación de dominio y mantienen handlers HTTP livianos.
+
 ---
 
 ## Modulos y Funcionalidades

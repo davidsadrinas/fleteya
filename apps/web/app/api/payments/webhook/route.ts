@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleSupabase } from "@/lib/supabase/admin";
 import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
-import { MercadoPagoConfig, Payment as MPPayment } from "mercadopago";
+import { getPaymentAdapter } from "@/lib/payments";
 import { createHmac } from "crypto";
-import { PAYMENT_RELEASE_HOURS } from "@shared/constants";
 import { emitInvoice, isBillingConfigured } from "@/lib/billing";
 import { notifyUser } from "@/lib/notifications";
 import { shipmentConfirmedEmail, paymentReceiptEmail } from "@/lib/email/templates";
 import { trackServerEvent } from "@/lib/analytics/server";
+import { handlePaymentWebhookUseCase } from "@/lib/use-cases/payments/handle-payment-webhook";
 
 function verifyWebhookSignature(
   req: NextRequest,
@@ -38,16 +38,6 @@ function verifyWebhookSignature(
 
   return computed === v1;
 }
-
-const MP_STATUS_MAP: Record<string, string> = {
-  approved: "approved",
-  rejected: "rejected",
-  in_process: "pending",
-  pending: "pending",
-  refunded: "refunded",
-  charged_back: "refunded",
-  cancelled: "rejected",
-};
 
 export async function POST(req: NextRequest) {
   const ip = getRequesterIp(req.headers);
@@ -84,132 +74,144 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
-  if (!accessToken) {
-    console.error("MERCADOPAGO_ACCESS_TOKEN not set");
+  const paymentAdapter = getPaymentAdapter();
+  if (!paymentAdapter.isConfigured()) {
+    console.error("Payment adapter not configured");
     return NextResponse.json({ ok: true });
   }
 
   try {
-    const mpConfig = new MercadoPagoConfig({ accessToken });
-    const mpPayment = new MPPayment(mpConfig);
-    const paymentInfo = await mpPayment.get({ id: Number(dataId) });
-
-    const externalRef = paymentInfo.external_reference;
+    const paymentInfo = await paymentAdapter.getPaymentById(Number(dataId));
+    const externalRef = paymentInfo.externalReference;
     if (!externalRef) {
       return NextResponse.json({ ok: true });
     }
 
     const admin = createServiceRoleSupabase();
-    const mappedStatus = MP_STATUS_MAP[paymentInfo.status ?? ""] ?? "pending";
-
-    const updateData: Record<string, unknown> = {
-      mercadopago_id: String(paymentInfo.id),
-      status: mappedStatus,
-      mercadopago_payment_type: paymentInfo.payment_type_id ?? null,
-      webhook_verified: true,
-      mercadopago_data: paymentInfo,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (mappedStatus === "approved") {
-      const releaseAt = new Date(
-        Date.now() + PAYMENT_RELEASE_HOURS * 60 * 60 * 1000
-      ).toISOString();
-      updateData.payout_status = "scheduled";
-      updateData.payout_scheduled_at = releaseAt;
-    }
-
-    await admin
-      .from("payments")
-      .update(updateData)
-      .eq("shipment_id", externalRef)
-      .eq("status", "pending");
-
-    // If payment approved, accept shipment if still pending
-    if (mappedStatus === "approved") {
-      await admin
-        .from("shipments")
-        .update({ status: "accepted", updated_at: new Date().toISOString() })
-        .eq("id", externalRef)
-        .eq("status", "pending");
-
-      // --- AFIP: emit invoice ---
-      let cae: string | undefined;
-      if (isBillingConfigured()) {
-        const invoice = await emitInvoice({
-          paymentId: String(paymentInfo.id),
-          shipmentId: externalRef,
-          amount: paymentInfo.transaction_amount ?? 0,
-        });
-        if (invoice.success) {
+    await handlePaymentWebhookUseCase(
+      {
+        updatePendingPayment: async (shipmentId, updateData) => {
+          await admin
+            .from("payments")
+            .update(updateData)
+            .eq("shipment_id", shipmentId)
+            .eq("status", "pending");
+        },
+        acceptShipmentIfPending: async (shipmentId) => {
+          await admin
+            .from("shipments")
+            .update({ status: "accepted", updated_at: new Date().toISOString() })
+            .eq("id", shipmentId)
+            .eq("status", "pending");
+        },
+        emitInvoiceForPayment: async ({ paymentId, shipmentId, amount }) => {
+          if (!isBillingConfigured()) return {};
+          const invoice = await emitInvoice({ paymentId, shipmentId, amount });
+          if (!invoice.success) return {};
           await admin.from("invoices").insert({
-            payment_id: externalRef, // will be updated once payment row has id
-            shipment_id: externalRef,
+            payment_id: shipmentId,
+            shipment_id: shipmentId,
             invoice_type: "factura_c",
             status: "issued",
             punto_venta: 1,
             numero_comprobante: invoice.numeroComprobante,
             cae: invoice.cae,
             cae_vencimiento: invoice.caeVencimiento,
-            total: paymentInfo.transaction_amount ?? 0,
-            neto: paymentInfo.transaction_amount ?? 0,
+            total: amount,
+            neto: amount,
           });
-          cae = invoice.cae;
-        }
-      }
-
-      // --- Notifications: confirm to client ---
-      const { data: shipment } = await admin
-        .from("shipments")
-        .select("client_id, final_price")
-        .eq("id", externalRef)
-        .maybeSingle();
-      if (shipment) {
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("name, email, phone")
-          .eq("id", shipment.client_id)
-          .maybeSingle();
-        if (profile) {
+          return { cae: invoice.cae };
+        },
+        findShipmentSummary: async (shipmentId) => {
+          const { data } = await admin
+            .from("shipments")
+            .select("client_id, final_price")
+            .eq("id", shipmentId)
+            .maybeSingle();
+          if (!data) return null;
+          return {
+            clientId: data.client_id as string,
+            finalPrice: Number(data.final_price ?? 0),
+          };
+        },
+        findClientProfile: async (clientId) => {
+          const { data } = await admin
+            .from("profiles")
+            .select("name, email, phone")
+            .eq("id", clientId)
+            .maybeSingle();
+          if (!data) return null;
+          return {
+            name: (data.name as string | null) ?? null,
+            email: (data.email as string | null) ?? null,
+            phone: (data.phone as string | null) ?? null,
+          };
+        },
+        notifyShipmentConfirmed: async ({
+          clientId,
+          shipmentId,
+          finalPrice,
+          profile,
+          paymentAmount,
+          cae,
+        }) => {
           const confirmed = shipmentConfirmedEmail({
             clientName: profile.name || "Cliente",
-            shipmentId: externalRef,
-            finalPrice: shipment.final_price ?? 0,
+            shipmentId,
+            finalPrice,
           });
           const receipt = paymentReceiptEmail({
             clientName: profile.name || "Cliente",
-            shipmentId: externalRef,
-            amount: paymentInfo.transaction_amount ?? 0,
+            shipmentId,
+            amount: paymentAmount,
             cae,
           });
-          void notifyUser({
-            userId: shipment.client_id,
+          await notifyUser({
+            userId: clientId,
             eventType: "shipment_confirmed",
             email: profile.email ? { to: profile.email, ...confirmed } : undefined,
             whatsapp: profile.phone
-              ? { to: profile.phone, templateName: "shipment_confirmed", parameters: [profile.name || "Cliente", externalRef.slice(0, 8), String(shipment.final_price ?? 0)] }
+              ? {
+                  to: profile.phone,
+                  templateName: "shipment_confirmed",
+                  parameters: [
+                    profile.name || "Cliente",
+                    shipmentId.slice(0, 8),
+                    String(finalPrice),
+                  ],
+                }
               : undefined,
-            push: { title: confirmed.subject, body: `Pago recibido por $${(shipment.final_price ?? 0).toLocaleString("es-AR")}` },
+            push: {
+              title: confirmed.subject,
+              body: `Pago recibido por $${finalPrice.toLocaleString("es-AR")}`,
+            },
           });
-          // Send receipt as separate email
           if (profile.email) {
-            void notifyUser({
-              userId: shipment.client_id,
+            await notifyUser({
+              userId: clientId,
               eventType: "payment_receipt",
               email: { to: profile.email, ...receipt },
             });
           }
-        }
-      }
-
-      // --- Analytics ---
-      void trackServerEvent(shipment?.client_id ?? "unknown", "payment_completed", {
-        amount: paymentInfo.transaction_amount,
-        paymentType: paymentInfo.payment_type_id,
+        },
+        trackPaymentCompleted: async ({
+          clientId,
+          shipmentId,
+          amount,
+          paymentTypeId,
+        }) => {
+          await trackServerEvent(clientId, "payment_completed", {
+            amount,
+            paymentType: paymentTypeId,
+            shipmentId,
+          });
+        },
+      },
+      {
         shipmentId: externalRef,
-      });
-    }
+        payment: paymentInfo,
+      }
+    );
   } catch (err) {
     console.error("Webhook processing error:", err);
   }
