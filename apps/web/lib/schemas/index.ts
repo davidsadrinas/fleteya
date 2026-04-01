@@ -30,6 +30,29 @@ export const createShipmentSchema = z.object({
   vehicleType: z.enum(["moto", "utilitario", "camioneta", "camion", "grua", "atmosferico"]).optional(),
   scheduledAt: z.string().datetime().optional(),
   legs: z.array(shipmentLegSchema).min(1, "Al menos un tramo").max(5, "Máximo 5 tramos"),
+  pricing: z
+    .object({
+      calculator: z.enum(["distance", "time", "demand", "custom"]).default("distance"),
+      demandMultiplier: z.number().min(0.5).max(3).optional(),
+      custom: z
+        .object({
+          baseFee: z.number().min(0),
+          perKmRate: z.number().min(0),
+          perMinuteRate: z.number().min(0).default(0),
+          demandMultiplier: z.number().min(0.5).max(3).default(1),
+        })
+        .optional(),
+    })
+    .superRefine((value, ctx) => {
+      if (value.calculator === "custom" && !value.custom) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "pricing.custom es obligatorio cuando calculator es custom",
+          path: ["custom"],
+        });
+      }
+    })
+    .optional(),
 });
 
 // Vehicle
@@ -81,6 +104,29 @@ export const quoteSchema = z.object({
     .enum(["mudanza", "mercaderia", "materiales", "electrodomesticos", "muebles", "acarreo_vehiculo", "limpieza_atmosferico", "residuos"])
     .optional(),
   vehicleType: z.enum(["moto", "utilitario", "camioneta", "camion", "grua", "atmosferico"]).optional(),
+  pricing: z
+    .object({
+      calculator: z.enum(["distance", "time", "demand", "custom"]).default("distance"),
+      demandMultiplier: z.number().min(0.5).max(3).optional(),
+      custom: z
+        .object({
+          baseFee: z.number().min(0),
+          perKmRate: z.number().min(0),
+          perMinuteRate: z.number().min(0).default(0),
+          demandMultiplier: z.number().min(0.5).max(3).default(1),
+        })
+        .optional(),
+    })
+    .superRefine((value, ctx) => {
+      if (value.calculator === "custom" && !value.custom) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "pricing.custom es obligatorio cuando calculator es custom",
+          path: ["custom"],
+        });
+      }
+    })
+    .optional(),
 });
 
 // Push subscription

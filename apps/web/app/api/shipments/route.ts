@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import { createShipmentSchema } from "@/lib/schemas";
+import { calculateShipmentPricing } from "@/lib/pricing";
 import { COMMISSION } from "@shared/types";
-import { calcChainDiscount, calcDistanceKm } from "@shared/utils";
 import { enforceRateLimit, getRequesterIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
@@ -73,18 +73,15 @@ export async function POST(req: NextRequest) {
 
   const input = parsed.data;
 
-  // Calculate pricing
-  let totalBase = 0;
-  const legsWithPricing = input.legs.map((leg, i) => {
-    const distKm = calcDistanceKm(leg.originLat, leg.originLng, leg.destLat, leg.destLng);
-    const basePrice = Math.round(3200 + distKm * 1800);
-    const chainDiscount = calcChainDiscount(i, input.legs.length);
-    const legPrice = Math.round(basePrice * (1 - chainDiscount));
-    totalBase += basePrice;
-    return { ...leg, legOrder: i, distanceKm: distKm, estimatedMinutes: Math.round(distKm * 3.5), price: legPrice, discount: chainDiscount * 100 };
+  const pricingResult = await calculateShipmentPricing({
+    legs: input.legs,
+    pricing: input.pricing,
+    includePolyline: false,
   });
+  const legsWithPricing = pricingResult.legs;
+  const totalBase = pricingResult.basePrice;
 
-  const totalFinal = legsWithPricing.reduce((s, l) => s + l.price, 0);
+  const totalFinal = pricingResult.finalPrice;
   const commission = Math.round(totalFinal * COMMISSION.BASE_RATE);
 
   const rpcLegs = legsWithPricing.map((leg) => ({
