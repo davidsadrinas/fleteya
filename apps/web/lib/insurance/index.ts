@@ -1,113 +1,36 @@
-import { reportError } from "@/lib/error-reporting";
+import { cargoInsuranceHttpAdapter } from "./adapters/cargo-insurance-http";
+import { internalInsuranceAdapter } from "./adapters/internal";
+import type { InsuranceAdapter, InsuranceQuote, PolicyResult, QuoteParams } from "./types";
 
-interface QuoteParams {
-  declaredValue: number;
-  shipmentType: string;
-  distanceKm: number;
-  coverageType: "basic" | "full" | "fragile";
+function getInsuranceAdapter(): InsuranceAdapter {
+  const provider = (process.env.CARGO_INSURANCE_PROVIDER ?? "internal").toLowerCase();
+  if (provider === "cargo_http") return cargoInsuranceHttpAdapter;
+  return internalInsuranceAdapter;
 }
-
-export interface InsuranceQuote {
-  premium: number;
-  deductible: number;
-  coverageDetails: string;
-  providerId?: string;
-}
-
-interface PolicyResult {
-  success: boolean;
-  policyNumber?: string;
-  externalId?: string;
-  error?: string;
-}
-
-const RATES: Record<string, number> = {
-  basic: 0.015,   // 1.5% of declared value
-  full: 0.03,     // 3%
-  fragile: 0.05,  // 5%
-};
-
-const MIN_PREMIUM = 500; // ARS
 
 export async function quoteInsurance(params: QuoteParams): Promise<InsuranceQuote> {
-  const apiUrl = process.env.CARGO_INSURANCE_API_URL;
-  const apiKey = process.env.CARGO_INSURANCE_API_KEY;
-
-  if (apiUrl && apiKey) {
-    try {
-      const response = await fetch(`${apiUrl}/quotes`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          declared_value: params.declaredValue,
-          cargo_type: params.shipmentType,
-          distance_km: params.distanceKm,
-          coverage: params.coverageType,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          premium: data.premium,
-          deductible: data.deductible ?? 0,
-          coverageDetails: data.coverage_details,
-          providerId: data.quote_id,
-        };
-      }
-    } catch (err) {
-      await reportError(err, { tags: { service: "insurance" } });
-    }
-  }
-
-  // Fallback: internal calculation
-  const rate = RATES[params.coverageType] ?? RATES.basic;
-  const premium = Math.max(params.declaredValue * rate, MIN_PREMIUM);
-
-  return {
-    premium: Math.round(premium * 100) / 100,
-    deductible: Math.round(premium * 0.1 * 100) / 100,
-    coverageDetails: `Cobertura ${params.coverageType} — hasta $${params.declaredValue.toLocaleString("es-AR")}`,
-  };
+  const selected = getInsuranceAdapter();
+  const quote = await selected.quote(params);
+  if (quote) return quote;
+  const fallbackQuote = await internalInsuranceAdapter.quote(params);
+  if (fallbackQuote) return fallbackQuote;
+  throw new Error("No se pudo cotizar el seguro");
 }
 
 export async function activatePolicy(
   quoteProviderId: string | undefined,
   shipmentId: string
 ): Promise<PolicyResult> {
-  const apiUrl = process.env.CARGO_INSURANCE_API_URL;
-  const apiKey = process.env.CARGO_INSURANCE_API_KEY;
-
-  if (apiUrl && apiKey && quoteProviderId) {
-    try {
-      const response = await fetch(`${apiUrl}/policies`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          quote_id: quoteProviderId,
-          shipment_reference: shipmentId,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return { success: true, policyNumber: data.policy_number, externalId: data.policy_id };
-      }
-    } catch (err) {
-      await reportError(err, { tags: { service: "insurance" } });
-    }
-  }
-
-  // Fallback: internal policy reference
-  return { success: true, policyNumber: `FY-${Date.now()}` };
+  const selected = getInsuranceAdapter();
+  const result = await selected.activatePolicy(quoteProviderId, shipmentId);
+  if (result) return result;
+  const fallbackResult = await internalInsuranceAdapter.activatePolicy(quoteProviderId, shipmentId);
+  if (fallbackResult) return fallbackResult;
+  throw new Error("No se pudo activar la póliza");
 }
 
 export function isInsuranceConfigured(): boolean {
-  return !!process.env.CARGO_INSURANCE_API_KEY;
+  return getInsuranceAdapter().isConfigured();
 }
+
+export type { QuoteParams, InsuranceQuote, PolicyResult } from "./types";

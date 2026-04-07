@@ -36,6 +36,12 @@ async function getResend(): Promise<ResendClient | null> {
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {
+  const provider = (process.env.EMAIL_PROVIDER ?? "resend").toLowerCase();
+  if (provider === "dry-run") {
+    console.log(`[Email][Dry] To: ${params.to} | Subject: ${params.subject}`);
+    return true;
+  }
+
   const resend = await getResend();
 
   if (!resend) {

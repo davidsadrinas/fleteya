@@ -17,6 +17,12 @@ function getConfig() {
 }
 
 export async function sendWhatsAppTemplate(msg: WhatsAppTemplateMessage): Promise<boolean> {
+  const provider = (process.env.WHATSAPP_PROVIDER ?? "meta").toLowerCase();
+  if (provider === "dry-run") {
+    console.log(`[WhatsApp][Dry] To: ${msg.to} | Template: ${msg.templateName}`);
+    return true;
+  }
+
   const config = getConfig();
 
   if (!config) {

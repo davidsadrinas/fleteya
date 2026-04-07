@@ -4,7 +4,27 @@ import { trackingQueue } from "@/lib/offline-queue";
 
 let flushInterval: ReturnType<typeof setInterval> | null = null;
 
-export async function startDriverLocationShare(shipmentId: string): Promise<Location.LocationSubscription | null> {
+export interface TrackingPointWriter {
+  write(point: {
+    shipment_id: string;
+    location: string;
+    speed: number | null;
+    heading: number | null;
+    created_at: string;
+  }): Promise<{ error: { message: string } | null }>;
+}
+
+const defaultTrackingPointWriter: TrackingPointWriter = {
+  async write(point) {
+    const { error } = await supabase.from("tracking_points").insert(point);
+    return { error: error ? { message: error.message } : null };
+  },
+};
+
+export async function startDriverLocationShare(
+  shipmentId: string,
+  writer: TrackingPointWriter = defaultTrackingPointWriter
+): Promise<Location.LocationSubscription | null> {
   const foreground = await Location.requestForegroundPermissionsAsync();
   if (foreground.status !== "granted") return null;
 
@@ -29,12 +49,12 @@ export async function startDriverLocationShare(shipmentId: string): Promise<Loca
       const point = {
         shipment_id: shipmentId,
         location: `POINT(${position.coords.longitude} ${position.coords.latitude})`,
-        speed: position.coords.speed,
-        heading: position.coords.heading,
+        speed: position.coords.speed ?? null,
+        heading: position.coords.heading ?? null,
         created_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("tracking_points").insert(point);
+      const { error } = await writer.write(point);
       if (error) {
         console.warn("Queuing tracking point offline:", error.message);
         trackingQueue.enqueue(point);

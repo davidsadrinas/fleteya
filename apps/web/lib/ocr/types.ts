@@ -6,6 +6,13 @@ export interface OcrResult {
   error?: string;
 }
 
+export type DocumentType = "dni_front" | "dni_back" | "license" | "insurance" | "vtv";
+
+export interface OcrAdapter {
+  isConfigured(): boolean;
+  extractText(imageUrl: string): Promise<{ rawText: string; confidence: number } | null>;
+}
+
 export interface DniFields {
   numero: string | null;
   apellido: string | null;

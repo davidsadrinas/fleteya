@@ -1,17 +1,6 @@
-import { reportError } from "@/lib/error-reporting";
-
-interface RoutePoint {
-  lat: number;
-  lng: number;
-}
-
-export interface RouteResult {
-  distanceKm: number;
-  durationMinutes: number;
-  polyline: string;
-  distanceText: string;
-  durationText: string;
-}
+import { googleDirectionsAdapter } from "./adapters/google-directions";
+import { haversineFallbackAdapter } from "./adapters/haversine-fallback";
+import type { RoutePoint, RouteResult, RoutingAdapter } from "./types";
 
 export interface MultiStopRouteResult {
   legs: RouteResult[];
@@ -19,50 +8,18 @@ export interface MultiStopRouteResult {
   totalDurationMinutes: number;
 }
 
-const DIRECTIONS_API = "https://maps.googleapis.com/maps/api/directions/json";
+function getRoutingAdapter(): RoutingAdapter {
+  const provider = (process.env.ROUTING_PROVIDER ?? "google").toLowerCase();
+  if (provider === "haversine") return haversineFallbackAdapter;
+  return googleDirectionsAdapter;
+}
 
-export async function calculateRoute(
-  origin: RoutePoint,
-  destination: RoutePoint
-): Promise<RouteResult | null> {
-  const apiKey =
-    process.env.GOOGLE_DIRECTIONS_API_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-
-  if (!apiKey) {
-    return null;
-  }
-
-  try {
-    const url = new URL(DIRECTIONS_API);
-    url.searchParams.set("origin", `${origin.lat},${origin.lng}`);
-    url.searchParams.set("destination", `${destination.lat},${destination.lng}`);
-    url.searchParams.set("mode", "driving");
-    url.searchParams.set("language", "es");
-    url.searchParams.set("region", "ar");
-    url.searchParams.set("key", apiKey);
-
-    const response = await fetch(url.toString());
-    const data = await response.json();
-
-    if (data.status !== "OK" || !data.routes?.[0]) {
-      console.warn(`[Routes] Directions API status: ${data.status}`);
-      return null;
-    }
-
-    const route = data.routes[0];
-    const leg = route.legs[0];
-
-    return {
-      distanceKm: leg.distance.value / 1000,
-      durationMinutes: Math.ceil(leg.duration.value / 60),
-      polyline: route.overview_polyline.points,
-      distanceText: leg.distance.text,
-      durationText: leg.duration.text,
-    };
-  } catch (err) {
-    await reportError(err, { tags: { service: "routes" } });
-    return null;
-  }
+export async function calculateRoute(origin: RoutePoint, destination: RoutePoint): Promise<RouteResult | null> {
+  const adapter = getRoutingAdapter();
+  const primaryResult = await adapter.calculateRoute(origin, destination);
+  if (primaryResult) return primaryResult;
+  if (adapter === haversineFallbackAdapter) return null;
+  return haversineFallbackAdapter.calculateRoute(origin, destination);
 }
 
 export async function calculateMultiStopRoute(
@@ -86,5 +43,7 @@ export async function calculateMultiStopRoute(
 }
 
 export function isRoutesConfigured(): boolean {
-  return !!(process.env.GOOGLE_DIRECTIONS_API_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY);
+  return getRoutingAdapter().isConfigured();
 }
+
+export type { RoutePoint, RouteResult } from "./types";

@@ -9,7 +9,20 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
+export interface PushTokenProvider {
+  getToken(): Promise<string>;
+}
+
+const expoPushTokenProvider: PushTokenProvider = {
+  async getToken() {
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  },
+};
+
+export async function registerForPushNotificationsAsync(
+  tokenProvider: PushTokenProvider = expoPushTokenProvider
+): Promise<string | null> {
   if (!Device.isDevice) return null;
 
   const current = await Notifications.getPermissionsAsync();
@@ -20,6 +33,5 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
   if (finalStatus !== "granted") return null;
 
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
+  return tokenProvider.getToken();
 }

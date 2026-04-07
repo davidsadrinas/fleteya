@@ -29,6 +29,12 @@ async function getTwilio() {
 }
 
 export async function sendSms(params: SmsParams): Promise<boolean> {
+  const provider = (process.env.SMS_PROVIDER ?? "twilio").toLowerCase();
+  if (provider === "dry-run") {
+    console.log(`[SMS][Dry] To: ${params.to} | Body: ${params.body}`);
+    return true;
+  }
+
   const client = await getTwilio();
 
   if (!client) {
